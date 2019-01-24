@@ -42,6 +42,8 @@ Which returns:
 
 Currently supported calls:
 ```
+GET Requests
+----------
 getInfo()       => api/device/information
 getTraffic()    => api/monitoring/traffic-statistics
 getStats()      => api/monitoring/month_statistics")
@@ -50,6 +52,8 @@ getAllClients() => api/lan/HostInfo
 getSignal()     => api/device/signal
 getMACFilter()  => api/security/mac-filter
 
+POST Requests
+-------------
 doReboot()      => api/device/control
 doPowerOff()    => api/device/control
 
