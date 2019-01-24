@@ -9,13 +9,13 @@ Untested but this may also work (or be able to be leveraged) for:
 - B715s-23c
 
 Usage is as follows:
-'''
+```
 router = B525Router(router='192.168.8.1', username='admin', password='xxx')
 router.getInfo() //Calls http://192.168.8.1/api/device/information
-'''
+```
 
 Which returns:
-'''
+```
 <response>
 <DeviceName>B525s-65a</DeviceName>
 <SerialNumber>xxx</SerialNumber>
@@ -38,10 +38,10 @@ Which returns:
 <workmode>LTE</workmode>
 <submask>255.255.255.255</submask>
 </response>
-'''
+```
 
 Currently supported calls:
-'''
+```
 getInfo()       => api/device/information
 getTraffic()    => api/monitoring/traffic-statistics
 getStats()      => api/monitoring/month_statistics")
@@ -55,7 +55,7 @@ doPowerOff()    => api/device/control
 
 setDenyMacFilter(macs)  => api/security/mac-filter
 clearMacFilter(macs)  => api/security/mac-filter
-'''
+```
 
 
     
