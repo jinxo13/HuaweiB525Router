@@ -58,7 +58,7 @@ doReboot()      => api/device/control
 doPowerOff()    => api/device/control
 
 setDenyMacFilter(macs)  => api/security/mac-filter
-clearMacFilter()  => api/security/mac-filter
+clearMacFilter()        => api/security/mac-filter
 ```
 
 
