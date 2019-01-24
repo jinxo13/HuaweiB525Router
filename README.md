@@ -11,7 +11,7 @@ Untested but this may also work (or be able to be leveraged) for:
 Usage is as follows:
 ```
 router = B525Router(router='192.168.8.1', username='admin', password='xxx')
-router.getInfo() //Calls http://192.168.8.1/api/device/information
+router.getInfo() #Calls http://192.168.8.1/api/device/information
 ```
 
 Which returns:
