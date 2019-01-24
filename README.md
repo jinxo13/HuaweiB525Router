@@ -1,5 +1,5 @@
 # HuaweiB525Router
-Python code to interact with the API for the Huawei B525 router (tested on model B525s-65a)
+Python3 code to interact with the API for the Huawei B525 router (tested on model B525s-65a)
 
 This implemented the SCAM authentication model Huawei are using on some routers.
 Based on the initial code from Marcin: https://github.com/mkorz/b618reboot
