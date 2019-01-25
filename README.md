@@ -8,38 +8,6 @@ Untested but this may also work (or be able to be leveraged) for:
 - B618s-22d
 - B715s-23c
 
-Usage is as follows:
-```
-router = B525Router(router='192.168.8.1', username='admin', password='xxx')
-router.getInfo() #Calls http://192.168.8.1/api/device/information
-```
-
-Which returns:
-```
-<response>
-<DeviceName>B525s-65a</DeviceName>
-<SerialNumber>xxx</SerialNumber>
-<Imei>xxx</Imei>
-<Imsi>xxx</Imsi>
-<Iccid>xxx</Iccid>
-<Msisdn/>
-<HardwareVersion>WL2B520M</HardwareVersion>
-<SoftwareVersion>11.189.63.00.74</SoftwareVersion>
-<WebUIVersion>21.100.44.00.03</WebUIVersion>
-<MacAddress1>XX:XX:XX:XX:XX:XX</MacAddress1>
-<MacAddress2/>
-<WanIPAddress>99.99.99.99</WanIPAddress>
-<wan_dns_address>99.99.99.99,99.99.99.99</wan_dns_address>
-<WanIPv6Address/>
-<wan_ipv6_dns_address/>
-<ProductFamily>LTE</ProductFamily>
-<Classify>cpe</Classify>
-<supportmode>LTE|WCDMA|GSM</supportmode>
-<workmode>LTE</workmode>
-<submask>255.255.255.255</submask>
-</response>
-```
-
 Currently supported calls:
 ```
 GET Requests
@@ -70,6 +38,49 @@ setAutomaticDns()
 setAllLanSettings(settings)
 setStaticHosts(settings)
 ```
+
+Example usage is as follows:
+```
+router = B525Router(router='192.168.8.1', username='admin', password='xxx')
+
+#Get Router information, example result below.
+router.getInfo()
+
+#Set DNS to Google
+router.setManualDns('8.8.8.8', '8.8.4.4')
+
+#Deny macs
+router.setDenyMacFilter(['xx:xx:xx:xx:xx:xx','yy:yy:yy:yy:yy:yy', ...])
+
+
+```
+
+Router information returned from getInfo():
+```
+<response>
+<DeviceName>B525s-65a</DeviceName>
+<SerialNumber>xxx</SerialNumber>
+<Imei>xxx</Imei>
+<Imsi>xxx</Imsi>
+<Iccid>xxx</Iccid>
+<Msisdn/>
+<HardwareVersion>WL2B520M</HardwareVersion>
+<SoftwareVersion>11.189.63.00.74</SoftwareVersion>
+<WebUIVersion>21.100.44.00.03</WebUIVersion>
+<MacAddress1>XX:XX:XX:XX:XX:XX</MacAddress1>
+<MacAddress2/>
+<WanIPAddress>99.99.99.99</WanIPAddress>
+<wan_dns_address>99.99.99.99,99.99.99.99</wan_dns_address>
+<WanIPv6Address/>
+<wan_ipv6_dns_address/>
+<ProductFamily>LTE</ProductFamily>
+<Classify>cpe</Classify>
+<supportmode>LTE|WCDMA|GSM</supportmode>
+<workmode>LTE</workmode>
+<submask>255.255.255.255</submask>
+</response>
+```
+
 
 
     
