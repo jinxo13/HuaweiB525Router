@@ -24,9 +24,8 @@ getStaticHosts()=> api/dhcp/static-addr-info
 
 POST Requests
 -------------
-doReboot()      => api/device/control
-doPowerOff()    => api/device/control
-
+doReboot()
+doPowerOff()
 setDenyMacFilter(macs)
 setAllowMacFilter(macs)
 setMacFilterOff()
