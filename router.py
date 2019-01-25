@@ -11,7 +11,8 @@ import logging
 from datetime import datetime, timedelta
 
 class xmlobject(object):
-    def buildXML(self, header=False):
+
+    def buildXML(self, header=True):
         result = []
         if (header): result.append('<?xml version:"1.0" encoding="UTF-8"?><request>')
         for property, value in vars(self).iteritems():
@@ -20,19 +21,63 @@ class xmlobject(object):
                 for v in value:
                     if (issubclass(type(v), xmlobject)):
                         result.extend(['<', type(v).__name__, '>'])
-                        result.append(v.buildXML())
+                        result.append(v.buildXML(False))
                         result.extend(['</', type(v).__name__, '>'])
                     else:
-                        result.append(v.buildXML())
+                        result.append(v.buildXML(False))
             elif (issubclass(type(value), xmlobject)):
                 result.extend(['<', type(value).__name__, '>'])
-                result.append(value.buildXML())
+                result.append(value.buildXML(False))
                 result.extend(['</', type(value).__name__, '>'])
             else:
                 result.append(str(value))
             result.extend(['</', property, '>'])
         if (header): result.append('</request>')
         return ''.join(result)
+
+    def parseXML(self, xmlText):
+        xml = ET.fromstring(xmlText)
+        for property, value in vars(self).iteritems():
+            if (type(value) is list):
+                pass #todo
+            elif (issubclass(type(value), xmlobject)):
+                pass #todo
+            else:
+                elm = xml.find('.//'+property)
+                if (elm is not None):
+                    val = elm.text
+                    if (val is None): val = ''
+                    setattr(self, property, val)
+
+class LanSettings(xmlobject):
+    def __init__(self):
+        self.DhcpLanNetmask = '255.255.255.0'
+        self.homeurl = 'homerouter.cpe'
+        self.DnsStatus = 1
+        self.PrimaryDns = '192.168.8.1'
+        self.SecondaryDns = '192.168.8.1'
+        self.accessipaddress = ''
+        self.DhcpStatus = 1
+        self.DhcpIPAddress = '192.168.8.1' #LAN IP Address
+        self.DhcpStartIPAddress = '192.168.8.100'
+        self.DhcpEndIPAddress = '192.168.8.200'
+        self.DhcpLeaseTime = 86400
+    def setDnsManual(self, primaryDns, secondaryDns=''):
+        self.DnsStatus = 0
+        self.PrimaryDns = primaryDns
+        self.SecondaryDns = secondaryDns
+    def setDnsAutomatic(self):
+        self.DnsStatus = 1
+    def setLanAddress(self, ipaddress, netmask='255.255.255.0', url='homerouter.cpe'):
+        self.DhcpIPAddress = ipaddress
+        self.homeurl = url
+    def setDhcpOn(self, startAddress, endAddress, leaseTime=86400):
+        self.DhcpStatus = 1
+        self.DhcpStartIPAddress = startAddress
+        self.DhcpEndIPAddress = endAddress
+        self.DhcpLeaseTime = leaseTime
+    def setDhcpOff(self):
+        self.DhcpStatus = 0
 
 class macfilter(xmlobject):
     def __init__(self, value):
@@ -51,7 +96,21 @@ class macfilters(xmlobject):
     def setDisabled(self): self.policy=self.MODE_DISABLE
     def addMac(self, macfilter):
         self.macfilters.append(macfilter)
-        return self
+
+class StaticHosts(xmlobject):
+    def __init__(self):
+        self.Hosts = []
+    def addHost(self, mac, ip):
+        host = Host(mac, ip)
+        self.Hosts.append(host)
+        host.HostIndex = len(self.Hosts)
+
+class Host(xmlobject):
+    def __init__(self, mac, ip):
+        self.HostIndex = 0
+        self.HostHw = mac
+        self.HostIp = ip
+        self.HostEnabled = 1
 
 class RouterControl(xmlobject):
     REBOOT = 1
@@ -183,26 +242,92 @@ class B525Router(object):
     def getClients(self): return self.__api("api/wlan/host-list")
     def getAllClients(self): return self.__api("api/lan/HostInfo")
     def getSignal(self): return self.__api("api/device/signal")
-    def getMACFilter(self): return self.__api("api/security/mac-filter")
+    def getMacFilter(self): return self.__api("api/security/mac-filter")
+    def getLanSettings(self): return self.__api("api/dhcp/settings")
+    def getStaticHosts(self): return self.__api("api/dhcp/static-addr-info")
 
     ######################## API POST Calls ##############################
     def doReboot(self):
+        '''Reboot the router'''
         control = RouterControl(RouterControl.REBOOT)
-        data = control.buildXML(control, True)
+        data = control.buildXML()
         return self.__api("api/device/control", data)
 
     def doPowerOff(self):
+        '''Power off the router'''
         control = RouterControl(RouterControl.POWEROFF)
-        data = control.buildXML(True)
+        data = control.buildXML()
         return self.__api("api/device/control", data)
 
     def setDenyMacFilter(self, macs):
+        '''Block listed MAC addresses LAN/WAN access'''
         filter = macfilters()
+        filter.setDeny()
         for m in macs:
             filter.addMac(macfilter(m))
-        data = filter.buildXML(True)
+        data = filter.buildXML()
         return self.__api("api/security/mac-filter", data)
 
-    def clearMacFilter(self):
-        #Clearing didn't seem to work as expected. So instead I just deny a single designated test mac
+    def setAllowMacFilter(self, macs):
+        '''Allow only listed MAC addresses LAN/WAN access'''
+        filter = macfilters()
+        filter.setAllow()
+        for m in macs:
+            filter.addMac(macfilter(m))
+        data = filter.buildXML()
+        return self.__api("api/security/mac-filter", data)
+
+    def setMacFilterOff(self):
+        '''Turn off any MAC Deny or Allow filtering'''
+        #Disabling didn't seem to work as expected. So instead I just deny a single designated test mac
         return self.setDenyMacFilter(['92:1b:46:9d:be:86'])
+
+    def setDhcpOff(self):
+        '''Turn off routers DHCP function'''
+        settings = LanSettings()
+        settings.parseXML(self.getLanSettings())
+        settings.setDhcpOff()
+        data = settings.buildXML()
+        return self.__api("api/dhcp/settings", data)
+
+    def setDhcpOn(self, startAddress, endAddress, leaseTime=86400):
+        '''Turn on routers DHCP function, and set start and end addresses'''
+        settings = LanSettings()
+        settings.parseXML(self.getLanSettings())
+        settings.setDhcpOn(startAddress, endAddress, leaseTime)
+        data = settings.buildXML()
+        return self.__api("api/dhcp/settings", data)
+
+    def setLanAddress(self, ipaddress, netmask='255.255.255.0', url='homerouter.cpe'):
+        '''Change the LAN ip address or router name on the LAN'''
+        settings = LanSettings()
+        settings.parseXML(self.getLanSettings())
+        settings.setLanAddress(ipaddress, netmask, url)
+        data = settings.buildXML()
+        return self.__api("api/dhcp/settings", data)
+
+    def setManualDns(self, primaryDns, secondaryDns=''):
+        '''Set manual DNS servers'''
+        settings = LanSettings()
+        settings.parseXML(self.getLanSettings())
+        settings.setDnsManual(primaryDns, secondaryDns)
+        data = settings.buildXML()
+        return self.__api("api/dhcp/settings", data)
+
+    def setAutomaticDns(self):
+        '''Use internet host provided DNS servers'''
+        settings = LanSettings()
+        settings.parseXML(self.getLanSettings())
+        settings.setDnsAutomatic()
+        data = settings.buildXML()
+        return self.__api("api/dhcp/settings", data)
+
+    def setAllLanSettings(self, settings):
+        '''Manually set all lan settings'''
+        data = settings.buildXML()
+        return self.__api("api/dhcp/settings", data)
+
+    def setStaticHosts(self, settings):
+        '''Set static host IP Addresses'''
+        data = settings.buildXML()
+        return self.__api("api/dhcp/static-addr-info", data)
