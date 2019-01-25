@@ -50,15 +50,25 @@ getStats()      => api/monitoring/month_statistics")
 getClients()    => api/wlan/host-list
 getAllClients() => api/lan/HostInfo
 getSignal()     => api/device/signal
-getMACFilter()  => api/security/mac-filter
+getMacFilter()  => api/security/mac-filter
+getLanSettings()=> api/dhcp/settings
+getStaticHosts()=> api/dhcp/static-addr-info
 
 POST Requests
 -------------
 doReboot()      => api/device/control
 doPowerOff()    => api/device/control
 
-setDenyMacFilter(macs)  => api/security/mac-filter
-clearMacFilter()        => api/security/mac-filter
+setDenyMacFilter(macs)
+setAllowMacFilter(macs)
+setMacFilterOff()
+setDhcpOff()
+setDhcpOn(startAddress, endAddress, leaseTime=86400)
+setLanAddress(ipaddress, netmask='255.255.255.0', url='homerouter.cpe')
+setManualDns(primaryDns, secondaryDns='')
+setAutomaticDns()
+setAllLanSettings(settings)
+setStaticHosts(settings)
 ```
 
 
