@@ -14,7 +14,7 @@ GET Requests
 ----------
 getInfo()       => api/device/information
 getTraffic()    => api/monitoring/traffic-statistics
-getStats()      => api/monitoring/month_statistics")
+getStats()      => api/monitoring/month_statistics
 getClients()    => api/wlan/host-list
 getAllClients() => api/lan/HostInfo
 getSignal()     => api/device/signal
