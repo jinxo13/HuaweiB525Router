@@ -44,8 +44,8 @@ You can use the ```testFeatures``` function to determine what is supported for y
 
    #Set up port forwarding to an IPSEC VPN server
    config = xmlobjects.VirtualServers()
-   config.addService('IPSEC1',500,500,'192.168.8.11',xmlobjects.VirtualServers.PROTOCOL_UDP)
-   config.addService('IPSEC2',4500,4500,'192.168.8.11',xmlobjects.VirtualServers.PROTOCOL_UDP)
+   config.addUdpService('IPSEC1',500,500,'192.168.8.11')
+   config.addUdpService('IPSEC2',4500,4500,'192.168.8.11')
    response = router.setVirtualServer(config)
 
    #Configure some LAN settings

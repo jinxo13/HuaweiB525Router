@@ -109,6 +109,15 @@ class VirtualServers(xmlobject):
         server = Server(name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, protocol)
         self.Servers.append(server)
         return server
+    def addUdpService(self, name, wanPort, lanPort, localIp): return self.addService(name, wanPort, lanPort, localIp, self.PROTOCOL_UDP)
+    def addTcpService(self, name, wanPort, lanPort, localIp): return self.addService(name, wanPort, lanPort, localIp, self.PROTOCOL_TCP)
+    def addBothService(self, name, wanPort, lanPort, localIp): return self.addService(name, wanPort, lanPort, localIp, self.PROTOCOL_BOTH)
+    def addUdpServices(self, name, startWanPort, endWanPort, startLanPort, endLanPort, localIp):
+        return self.addServices(name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, self.PROTOCOL_UDP)
+    def addTcpServices(self, name, startWanPort, endWanPort, startLanPort, endLanPort, localIp):
+        return self.addServices(name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, self.PROTOCOL_TCP)
+    def addBothServices(self, name, startWanPort, endWanPort, startLanPort, endLanPort, localIp):
+        return self.addServices(name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, self.PROTOCOL_BOTH)
 
 class Server(xmlobject):
     def __init__(self, name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, protocol=VirtualServers.PROTOCOL_BOTH):
