@@ -46,27 +46,28 @@ You can use the ```testFeatures``` function to determine what is supported for y
 
 Here's an example reponse (for ```getInfo()```):
 ```
+<?xml version="1.0" encoding="UTF-8"?>
 <response>
-<DeviceName>B525s-65a</DeviceName>
-<SerialNumber>xxx</SerialNumber>
-<Imei>xxx</Imei>
-<Imsi>xxx</Imsi>
-<Iccid>xxx</Iccid>
-<Msisdn/>
-<HardwareVersion>WL2B520M</HardwareVersion>
-<SoftwareVersion>11.189.63.00.74</SoftwareVersion>
-<WebUIVersion>21.100.44.00.03</WebUIVersion>
-<MacAddress1>XX:XX:XX:XX:XX:XX</MacAddress1>
-<MacAddress2/>
-<WanIPAddress>99.99.99.99</WanIPAddress>
-<wan_dns_address>99.99.99.99,99.99.99.99</wan_dns_address>
-<WanIPv6Address/>
-<wan_ipv6_dns_address/>
-<ProductFamily>LTE</ProductFamily>
-<Classify>cpe</Classify>
-<supportmode>LTE|WCDMA|GSM</supportmode>
-<workmode>LTE</workmode>
-<submask>255.255.255.255</submask>
+   <DeviceName>B525s-65a</DeviceName>
+   <SerialNumber>xxx</SerialNumber>
+   <Imei>xxx</Imei>
+   <Imsi>xxx</Imsi>
+   <Iccid>xxx</Iccid>
+   <Msisdn />
+   <HardwareVersion>WL2B520M</HardwareVersion>
+   <SoftwareVersion>11.189.63.00.74</SoftwareVersion>
+   <WebUIVersion>21.100.44.00.03</WebUIVersion>
+   <MacAddress1>XX:XX:XX:XX:XX:XX</MacAddress1>
+   <MacAddress2 />
+   <WanIPAddress>99.99.99.99</WanIPAddress>
+   <wan_dns_address>99.99.99.99,99.99.99.99</wan_dns_address>
+   <WanIPv6Address />
+   <wan_ipv6_dns_address />
+   <ProductFamily>LTE</ProductFamily>
+   <Classify>cpe</Classify>
+   <supportmode>LTE|WCDMA|GSM</supportmode>
+   <workmode>LTE</workmode>
+   <submask>255.255.255.255</submask>
 </response>
 ```
 
