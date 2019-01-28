@@ -1,4 +1,4 @@
-# HuaweiB525Router
+# Huawei B525 Router Python API
 Python2 code to interact with the underlying API for the Huawei B525 router (tested on model B525s-65a).
 This is bascially a proxy for the API calls with some additional features.
 The API responses are in XML.
