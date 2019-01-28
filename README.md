@@ -107,83 +107,83 @@ clearTrafficStats()
 
 ## Results of testFeatuires() for B525-65a
 ```
-&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-&lt;response&gt;
-   &lt;DeviceName&gt;B525s-65a&lt;/DeviceName&gt;
-   &lt;ProductFamily&gt;LTE&lt;/ProductFamily&gt;
-   &lt;HardwareVersion&gt;WL2B520M&lt;/HardwareVersion&gt;
-   &lt;SoftwareVersion&gt;11.189.63.00.74&lt;/SoftwareVersion&gt;
-   &lt;WebUIVersion&gt;21.100.44.00.03&lt;/WebUIVersion&gt;
-   &lt;MacAddress1&gt;D0:16:B4:F2:30:92&lt;/MacAddress1&gt;
-   &lt;MacAddress2 /&gt;
-   &lt;Failed&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/led/circle-switch&lt;/Url&gt;
-         &lt;Name&gt;getCircleLed&lt;/Name&gt;
-         &lt;Error&gt;100006: Parameter error&lt;/Error&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/timerule/timerule&lt;/Url&gt;
-         &lt;Name&gt;getTimeRule&lt;/Name&gt;
-         &lt;Error&gt;100006: Parameter error&lt;/Error&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/security/bridgemode&lt;/Url&gt;
-         &lt;Name&gt;getBridgeMode&lt;/Name&gt;
-         &lt;Error&gt;100002: The router does not support this function&lt;/Error&gt;
-      &lt;/Function&gt;
-   &lt;/Failed&gt;
-   &lt;Passed&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/dhcp/static-addr-info&lt;/Url&gt;
-         &lt;Name&gt;getStaticHosts&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/wlan/host-list&lt;/Url&gt;
-         &lt;Name&gt;getClients&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/user/history-login&lt;/Url&gt;
-         &lt;Name&gt;getUserHistory&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/lan/HostInfo&lt;/Url&gt;
-         &lt;Name&gt;getAllClients&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/device/information&lt;/Url&gt;
-         &lt;Name&gt;getInfo&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/dhcp/settings&lt;/Url&gt;
-         &lt;Name&gt;getLanSettings&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/device/signal&lt;/Url&gt;
-         &lt;Name&gt;getSignal&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/monitoring/month_statistics&lt;/Url&gt;
-         &lt;Name&gt;getStats&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/monitoring/traffic-statistics&lt;/Url&gt;
-         &lt;Name&gt;getTraffic&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-      &lt;Function&gt;
-         &lt;Url&gt;api/security/mac-filter&lt;/Url&gt;
-         &lt;Name&gt;getMacFilter&lt;/Name&gt;
-         &lt;Error /&gt;
-      &lt;/Function&gt;
-   &lt;/Passed&gt;
-&lt;/response&gt;
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+   <DeviceName>B525s-65a</DeviceName>
+   <ProductFamily>LTE</ProductFamily>
+   <HardwareVersion>WL2B520M</HardwareVersion>
+   <SoftwareVersion>11.189.63.00.74</SoftwareVersion>
+   <WebUIVersion>21.100.44.00.03</WebUIVersion>
+   <MacAddress1>D0:16:B4:F2:30:92</MacAddress1>
+   <MacAddress2 />
+   <Failed>
+      <Function>
+         <Url>api/led/circle-switch</Url>
+         <Name>getCircleLed</Name>
+         <Error>100006: Parameter error</Error>
+      </Function>
+      <Function>
+         <Url>api/timerule/timerule</Url>
+         <Name>getTimeRule</Name>
+         <Error>100006: Parameter error</Error>
+      </Function>
+      <Function>
+         <Url>api/security/bridgemode</Url>
+         <Name>getBridgeMode</Name>
+         <Error>100002: The router does not support this function</Error>
+      </Function>
+   </Failed>
+   <Passed>
+      <Function>
+         <Url>api/dhcp/static-addr-info</Url>
+         <Name>getStaticHosts</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/wlan/host-list</Url>
+         <Name>getClients</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/user/history-login</Url>
+         <Name>getUserHistory</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/lan/HostInfo</Url>
+         <Name>getAllClients</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/device/information</Url>
+         <Name>getInfo</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/dhcp/settings</Url>
+         <Name>getLanSettings</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/device/signal</Url>
+         <Name>getSignal</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/monitoring/month_statistics</Url>
+         <Name>getStats</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/monitoring/traffic-statistics</Url>
+         <Name>getTraffic</Name>
+         <Error />
+      </Function>
+      <Function>
+         <Url>api/security/mac-filter</Url>
+         <Name>getMacFilter</Name>
+         <Error />
+      </Function>
+   </Passed>
+</response>
 ```
