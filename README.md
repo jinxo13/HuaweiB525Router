@@ -108,7 +108,7 @@ setStaticHosts(settings)
 clearTrafficStats()
 ```
 
-## Results of testFeatuires() for B525-65a
+## Results of testFeatures() for B525-65a
 ```
 <?xml version="1.0" encoding="UTF-8"?>
 <response>
