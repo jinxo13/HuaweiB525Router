@@ -188,6 +188,9 @@ class B525Router(object):
     @getapi(api='api/led/circle-switch')
     def getCircleLed(self): pass
 
+    @getapi(api='api/security/virtual-servers')
+    def getVirtualServers(self): pass
+
     def testFeatures(self):
         ''' Tests the routers available features'''
         result = xmlobjects.TestFunctions()
@@ -310,3 +313,12 @@ class B525Router(object):
         config = xmlobjects.CustomXml({'ClearTraffic': 1})
         data = config.buildXML()
         return self.api('api/monitoring/clear-traffic', data)
+
+    def setVirtualServer(self, servers):
+        data = servers.buildXML()
+        return self.api('api/security/virtual-servers', data)
+
+    def clearVirtualServer(self):
+        config = xmlobjects.CustomXml({'Servers': ''})
+        data = config.buildXML()
+        return self.api('api/security/virtual-servers', data)

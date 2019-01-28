@@ -13,35 +13,57 @@ You can use the ```testFeatures``` function to determine what is supported for y
 - SCRAM authentication model Huawei are using on some routers - based on the initial code from Marcin: https://github.com/mkorz/b618reboot
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
 - Additional custom API calls like getSignalStrength() - returns strength rating of 0 - 5
+- For Optus Australia users allows setting DNS and Port Forwarding which is eith hidden or disabled in the Web UI
 
 ## Example usage
 ```
-    from router import B525Router
-    
-    #Connect to the router
-    router = B525Router(router='192.168.8.1', username='admin', password='xxx')
+   from router import B525Router
+   import xmlobjects
+   
+   #Connect to the router
+   router = B525Router(router='192.168.8.1', username='admin', password='xxx')
 
-    #Get a list of what API calls appear to be are supported (GET requests only)
-    response = router.testFeatures()
+   #Get a list of what API calls appear to be are supported (GET requests only)
+   response = router.testFeatures()
 
-    #Get the router detailed information
-    response = router.getInfo() #Calls http://192.168.8.1/api/device/information
+   #Get the router detailed information
+   response = router.getInfo() #Calls http://192.168.8.1/api/device/information
 
-    #Reboot
-    response = router.doReboot()
+   #Reboot
+   response = router.doReboot()
 
-    #Configure MAC filtering to blacklist MAC addresses
-    response = router.setDenyMacFilter(['XX:XX:XX:XX:XX:XX', 'YY:YY:YY:YY:YY:YY'])
+   #Configure MAC filtering to blacklist MAC addresses
+   response = router.setDenyMacFilter(['XX:XX:XX:XX:XX:XX', 'YY:YY:YY:YY:YY:YY'])
 
-    #Make a custom GET API call
-    response = router.api('api/device/information')
+   #Make a custom GET API call
+   response = router.api('api/device/information')
 
-    #Make a custom POST API call, does a reboot
-    request = '<?xml version="1.0" encoding="UTF-8"?><request><Control>1</Control></request>'
-    response = router.api('api/device/control', request)
+   #Make a custom POST API call, does a reboot
+   request = '<?xml version="1.0" encoding="UTF-8"?><request><Control>1</Control></request>'
+   response = router.api('api/device/control', request)
 
-    #Logout
-    response = router.logout()
+   #Set up port forwarding to an IPSEC VPN server
+   config = xmlobjects.VirtualServers()
+   config.addService('IPSEC1',500,500,'192.168.8.11',xmlobjects.VirtualServers.PROTOCOL_UDP)
+   config.addService('IPSEC2',4500,4500,'192.168.8.11',xmlobjects.VirtualServers.PROTOCOL_UDP)
+   response = router.setVirtualServer(config)
+
+   #Configure some LAN settings
+   config = xmlobjects.LanSettings()
+   config.setDnsManual('192.168.8.11','192.168.8.1')
+   config.setLanAddress('192.168.8.1','255.255.255.0','homerouter.cpe')
+   config.setDhcpOn('192.168.8.100','192.168.8.200',86400)
+   response = router.setAllLanSettings(config)
+
+   #Setup some static hosts
+   config = xmlobjects.StaticHosts()
+   config.addHost('e7:4e:08:31:61:ba','192.168.8.11')
+   config.addHost('b8:29:eb:dd:0d:c1','192.168.8.10')
+   config.addHost('f0:03:8f:b3:1c:9a','192.168.8.12')
+   response = router.setStaticHosts(config)
+
+   #Logout
+   response = router.logout()
 ```
 
 Here's an example reponse (for ```getInfo()```):
@@ -88,6 +110,7 @@ getStaticHosts()    => api/dhcp/static-addr-info
 getBridgeMode()     => api/security/bridgemode (Not supported on B525)
 getTimeRule()       => api/timerule/timerule (Not supported on B525)
 getCircleLed()      => api/led/circle-switch (Not supported on B525)
+getVirtualServers() => api/security/virtual-servers
 getSignalStrength() => Custom - returns signal strength between 0 and 5 based on rsrp value
 
 POST Requests
@@ -106,6 +129,8 @@ setAutomaticDns()
 setAllLanSettings(settings)
 setStaticHosts(settings)
 clearTrafficStats()
+setVirtualServers(servers)
+clearVirtualServers()
 ```
 
 ## Results of testFeatures() for B525-65a

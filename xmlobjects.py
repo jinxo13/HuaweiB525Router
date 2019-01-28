@@ -97,6 +97,33 @@ class TestFunctions(xmlobject):
         else:
             self.Passed.append(func)
 
+class VirtualServers(xmlobject):
+    PROTOCOL_BOTH = 0
+    PROTOCOL_TCP = 6
+    PROTOCOL_UDP = 17
+    def __init__(self):
+        self.Servers = []
+    def addService(self, name, wanPort, lanPort, localIp, protocol=PROTOCOL_BOTH):
+        return self.addServices(name, wanPort, wanPort, lanPort, lanPort, localIp, protocol)
+    def addServices(self, name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, protocol=PROTOCOL_BOTH):
+        server = Server(name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, protocol)
+        self.Servers.append(server)
+        return server
+
+class Server(xmlobject):
+    def __init__(self, name, startWanPort, endWanPort, startLanPort, endLanPort, localIp, protocol=VirtualServers.PROTOCOL_BOTH):
+        if (protocol not in [VirtualServers.PROTOCOL_BOTH, VirtualServers.PROTOCOL_TCP, VirtualServers.PROTOCOL_UDP]): raise ValueError('Invalid protocol specified for port forwarding (Virtual Server)')
+        if (not utils.isIpValid(localIp)): raise ValueError('Invalid ipaddress specified for port fowarding target server')
+        self.VirtualServerIPName = name
+        self.VirtualServerStatus = 1
+        self.VirtualServerRemoteIP = ''
+        self.VirtualServerWanPort = startWanPort
+        self.VirtualServerWanEndPort = endWanPort
+        self.VirtualServerLanPort = startLanPort
+        self.VirtualServerLanEndPort = endLanPort
+        self.VirtualServerIPAddress = localIp
+        self.VirtualServerProtocol = protocol
+
 class LanSettings(xmlobject):
     def __init__(self):
         self.DhcpLanNetmask = '255.255.255.0'
