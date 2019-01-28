@@ -10,113 +10,22 @@ import requests
 import logging
 from datetime import datetime, timedelta
 
-class xmlobject(object):
+#Local imports
+import xmlobjects
+import utils
+from errors import RouterError
 
-    def buildXML(self, header=True):
-        result = []
-        if (header): result.append('<?xml version:"1.0" encoding="UTF-8"?><request>')
-        for property, value in vars(self).iteritems():
-            result.extend(['<', property, '>'])
-            if (type(value) is list):
-                for v in value:
-                    if (issubclass(type(v), xmlobject)):
-                        result.extend(['<', type(v).__name__, '>'])
-                        result.append(v.buildXML(False))
-                        result.extend(['</', type(v).__name__, '>'])
-                    else:
-                        result.append(v.buildXML(False))
-            elif (issubclass(type(value), xmlobject)):
-                result.extend(['<', type(value).__name__, '>'])
-                result.append(value.buildXML(False))
-                result.extend(['</', type(value).__name__, '>'])
-            else:
-                result.append(str(value))
-            result.extend(['</', property, '>'])
-        if (header): result.append('</request>')
-        return ''.join(result)
-
-    def parseXML(self, xmlText):
-        xml = ET.fromstring(xmlText)
-        for property, value in vars(self).iteritems():
-            if (type(value) is list):
-                pass #todo
-            elif (issubclass(type(value), xmlobject)):
-                pass #todo
-            else:
-                elm = xml.find('.//'+property)
-                if (elm is not None):
-                    val = elm.text
-                    if (val is None): val = ''
-                    setattr(self, property, val)
-
-class LanSettings(xmlobject):
-    def __init__(self):
-        self.DhcpLanNetmask = '255.255.255.0'
-        self.homeurl = 'homerouter.cpe'
-        self.DnsStatus = 1
-        self.PrimaryDns = '192.168.8.1'
-        self.SecondaryDns = '192.168.8.1'
-        self.accessipaddress = ''
-        self.DhcpStatus = 1
-        self.DhcpIPAddress = '192.168.8.1' #LAN IP Address
-        self.DhcpStartIPAddress = '192.168.8.100'
-        self.DhcpEndIPAddress = '192.168.8.200'
-        self.DhcpLeaseTime = 86400
-    def setDnsManual(self, primaryDns, secondaryDns=''):
-        self.DnsStatus = 0
-        self.PrimaryDns = primaryDns
-        self.SecondaryDns = secondaryDns
-    def setDnsAutomatic(self):
-        self.DnsStatus = 1
-    def setLanAddress(self, ipaddress, netmask='255.255.255.0', url='homerouter.cpe'):
-        self.DhcpIPAddress = ipaddress
-        self.homeurl = url
-    def setDhcpOn(self, startAddress, endAddress, leaseTime=86400):
-        self.DhcpStatus = 1
-        self.DhcpStartIPAddress = startAddress
-        self.DhcpEndIPAddress = endAddress
-        self.DhcpLeaseTime = leaseTime
-    def setDhcpOff(self):
-        self.DhcpStatus = 0
-
-class macfilter(xmlobject):
-    def __init__(self, value):
-        self.value=value
-        self.status=1
-
-class macfilters(xmlobject):
-    MODE_DISABLE=0
-    MODE_ALLOW=1
-    MODE_DENY=2
-    def __init__(self):
-        self.policy=self.MODE_DENY
-        self.macfilters=[]
-    def setAllow(self): self.policy=self.MODE_ALLOW
-    def setDeny(self): self.policy=self.MODE_DENY
-    def setDisabled(self): self.policy=self.MODE_DISABLE
-    def addMac(self, macfilter):
-        self.macfilters.append(macfilter)
-
-class StaticHosts(xmlobject):
-    def __init__(self):
-        self.Hosts = []
-    def addHost(self, mac, ip):
-        host = Host(mac, ip)
-        self.Hosts.append(host)
-        host.HostIndex = len(self.Hosts)
-
-class Host(xmlobject):
-    def __init__(self, mac, ip):
-        self.HostIndex = 0
-        self.HostHw = mac
-        self.HostIp = ip
-        self.HostEnabled = 1
-
-class RouterControl(xmlobject):
-    REBOOT = 1
-    POWEROFF = 4
-    def __init__(control):
-        self.Control = control
+#Dictionary to hold all GET APIS, used by testFeatures function
+GET_APIS = {}
+#Decorator for GET API functions, populates the GET_APIS dictionary
+def getapi(api):
+    def api_decorator(f):
+        GET_APIS[f.__name__]=api
+        def decorated_function(*args, **kwargs):
+            inst = args[0]
+            return inst.api(api)
+        return decorated_function
+    return api_decorator
 
 class B525Router(object):
     LOGIN_TIMEOUT=300 #5 minutes
@@ -166,6 +75,8 @@ class B525Router(object):
         """ retrieves server token """
         url = "http://%s/api/webserver/token" % self.router
         token_response = self.client.get(url).text
+        if (RouterError.hasError(token_response)):
+            raise RouterError(token_response)
         root = ET.fromstring(token_response)
         return root.findall('./token')[0].text
 
@@ -186,16 +97,14 @@ class B525Router(object):
                 '__RequestVerificationToken': token[32:]}
         response = self.client.post(url, data=ET.tostring(
             request, encoding='utf8', method='xml'), headers=headers)
+        if (RouterError.hasError(response.text)):
+            raise RouterError(response.text)
         scram_data = ET.fromstring(response.text)
         verification_token = response.headers['__RequestVerificationToken']
 
         duration = datetime.now() - self.lastLogin
         if (duration.total_seconds() <= self.LOGIN_TIMEOUT):
-            logging.warning('Skip login')
             return self.__get_server_token()[32:]
-
-        logging.warning('Do new login')
-
         servernonce = scram_data.findall('./servernonce')[0].text
         salt = scram_data.findall('./salt')[0].text
         iterations = int(scram_data.findall('./iterations')[0].text)
@@ -211,11 +120,13 @@ class B525Router(object):
         url = "http://%s/api/user/authentication_login" % self.router
         result = self.client.post(url, data=ET.tostring(
             login_request, encoding='utf8', method='xml'), headers=headers)
+        if (RouterError.hasError(result.text)):
+            raise RouterError(result.text)
         verification_token = result.headers['__RequestVerificationTokenone']
         self.lastLogin = datetime.now()
         return verification_token
 
-    def __api(self, api_url, data=None):
+    def api(self, api_url, data=None):
         """ Handles all api calls to the router """
         if (self.client is None):
             self.client = requests.Session()
@@ -229,53 +140,115 @@ class B525Router(object):
             response = self.client.get(url, headers=headers).text
         else:
             response = self.client.post(url, data=data, headers=headers).text
+
+        #Add error message if known and missing
+        if RouterError.hasError(response):
+            error = xmlobjects.Error()
+            error.parseXML(response)
+            response = error.buildXML(root='error')
         return response
 
-    #Disabled: <response><macfilters></macfilters><policy>2</policy></response>
-    #Allow: <response><macfilters><macfilter><value>b2:27:eb:dd:0d:d2</value><status>1</status></macfilter></macfilters><policy>1</policy></response>
-    #Deny: <request><policy>2</policy><macfilters><macfilter><value>b2:27:eb:dd:0d:d2</value><status>1</status></macfilter></macfilters></request>
-
     ######################## API GET Calls ##############################
-    def getInfo(self): return self.__api("api/device/information")
-    def getTraffic(self): return self.__api("api/monitoring/traffic-statistics")
-    def getStats(self): return self.__api("api/monitoring/month_statistics")
-    def getClients(self): return self.__api("api/wlan/host-list")
-    def getAllClients(self): return self.__api("api/lan/HostInfo")
-    def getSignal(self): return self.__api("api/device/signal")
-    def getMacFilter(self): return self.__api("api/security/mac-filter")
-    def getLanSettings(self): return self.__api("api/dhcp/settings")
-    def getStaticHosts(self): return self.__api("api/dhcp/static-addr-info")
+    @getapi(api='api/user/history-login')
+    def getUserHistory(self): pass
+
+    @getapi(api='api/device/information')
+    def getInfo(self): pass
+    
+    @getapi(api='api/monitoring/traffic-statistics')
+    def getTraffic(self, api=''): pass
+
+    @getapi(api='api/monitoring/month_statistics')
+    def getStats(self): pass
+
+    @getapi(api='api/wlan/host-list')
+    def getClients(self): pass
+
+    @getapi(api='api/lan/HostInfo')
+    def getAllClients(self): pass
+
+    @getapi(api='api/device/signal')
+    def getSignal(self): pass
+
+    @getapi(api='api/security/mac-filter')
+    def getMacFilter(self): pass
+
+    @getapi(api='api/dhcp/settings')
+    def getLanSettings(self): pass
+
+    @getapi(api='api/dhcp/static-addr-info')
+    def getStaticHosts(self): pass
+
+    @getapi(api='api/security/bridgemode')
+    def getBridgeMode(self): pass #Returns Not supported error on B525
+
+    @getapi(api='api/timerule/timerule')
+    def getTimeRule(self): pass
+
+    @getapi(api='api/led/circle-switch')
+    def getCircleLed(self): pass
+
+    def testFeatures(self):
+        ''' Tests the routers available features'''
+        result = xmlobjects.TestFunctions()
+        info = self.getInfo()
+        if (not RouterError.hasError(info)):
+            result.parseXML(info)
+
+        #Iterate through getapi calls
+        for f in GET_APIS:
+            func = getattr(self, f)
+            api = GET_APIS[f]
+            result.addFunction(f, api, func())
+            
+        return result.buildXML(root='response')
+
+    ######################## API Custom GET Calls ##############################
+    def getSignalStrength(self):
+        '''Returns a signal strength from 0 to 5 (where 5 is the best), based on the rsrp value'''
+        response = self.getSignal()
+        root = ET.fromstring(response)
+        rsrp = int(root.findall('./rsrp')[0].text[:-3])
+        rsrp_q=utils.getRange([-90, -105, -112, -125, -136], rsrp)
+        result = xmlobjects.CustomXml({'SignalStrength': 5-rsrp_q})
+        return result.buildXML(root='response')
 
     ######################## API POST Calls ##############################
+    def logout(self):
+        '''Logout user'''
+        xml = xmlobjects.CustomXml({'logout': 1})
+        data = xml.buildXML()
+        return self.api('api/user/logout', data)
+
     def doReboot(self):
         '''Reboot the router'''
-        control = RouterControl(RouterControl.REBOOT)
+        control = xmlobjects.RouterControl.reboot()
         data = control.buildXML()
-        return self.__api("api/device/control", data)
+        return self.api('api/device/control', data)
 
     def doPowerOff(self):
         '''Power off the router'''
-        control = RouterControl(RouterControl.POWEROFF)
+        control = xmlobjects.RouterControl.poweroff()
         data = control.buildXML()
-        return self.__api("api/device/control", data)
+        return self.api('api/device/control', data)
 
     def setDenyMacFilter(self, macs):
         '''Block listed MAC addresses LAN/WAN access'''
-        filter = macfilters()
+        filter = xmlobjects.macfilters()
         filter.setDeny()
         for m in macs:
-            filter.addMac(macfilter(m))
+            filter.addMac(xmlobjects.macfilter(m))
         data = filter.buildXML()
-        return self.__api("api/security/mac-filter", data)
+        return self.api('api/security/mac-filter', data)
 
     def setAllowMacFilter(self, macs):
         '''Allow only listed MAC addresses LAN/WAN access'''
-        filter = macfilters()
+        filter = xmlobjects.macfilters()
         filter.setAllow()
         for m in macs:
-            filter.addMac(macfilter(m))
+            filter.addMac(xmlobjects.macfilter(m))
         data = filter.buildXML()
-        return self.__api("api/security/mac-filter", data)
+        return self.api('api/security/mac-filter', data)
 
     def setMacFilterOff(self):
         '''Turn off any MAC Deny or Allow filtering'''
@@ -284,50 +257,56 @@ class B525Router(object):
 
     def setDhcpOff(self):
         '''Turn off routers DHCP function'''
-        settings = LanSettings()
-        settings.parseXML(self.getLanSettings())
-        settings.setDhcpOff()
-        data = settings.buildXML()
-        return self.__api("api/dhcp/settings", data)
+        config = xmlobjects.LanSettings()
+        config.parseXML(self.getLanSettings())
+        config.setDhcpOff()
+        data = config.buildXML()
+        return self.api('api/dhcp/settings', data)
 
     def setDhcpOn(self, startAddress, endAddress, leaseTime=86400):
         '''Turn on routers DHCP function, and set start and end addresses'''
-        settings = LanSettings()
-        settings.parseXML(self.getLanSettings())
-        settings.setDhcpOn(startAddress, endAddress, leaseTime)
-        data = settings.buildXML()
-        return self.__api("api/dhcp/settings", data)
+        config = xmlobjects.LanSettings()
+        config.parseXML(self.getLanSettings())
+        config.setDhcpOn(startAddress, endAddress, leaseTime)
+        data = config.buildXML()
+        return self.api('api/dhcp/settings', data)
 
     def setLanAddress(self, ipaddress, netmask='255.255.255.0', url='homerouter.cpe'):
         '''Change the LAN ip address or router name on the LAN'''
-        settings = LanSettings()
-        settings.parseXML(self.getLanSettings())
-        settings.setLanAddress(ipaddress, netmask, url)
-        data = settings.buildXML()
-        return self.__api("api/dhcp/settings", data)
+        config = xmlobjects.LanSettings()
+        config.parseXML(self.getLanSettings())
+        config.setLanAddress(ipaddress, netmask, url)
+        data = config.buildXML()
+        return self.api('api/dhcp/settings', data)
 
     def setManualDns(self, primaryDns, secondaryDns=''):
         '''Set manual DNS servers'''
-        settings = LanSettings()
-        settings.parseXML(self.getLanSettings())
-        settings.setDnsManual(primaryDns, secondaryDns)
-        data = settings.buildXML()
-        return self.__api("api/dhcp/settings", data)
+        config = xmlobjects.LanSettings()
+        config.parseXML(self.getLanSettings())
+        config.setDnsManual(primaryDns, secondaryDns)
+        data = config.buildXML()
+        return self.api('api/dhcp/settings', data)
 
     def setAutomaticDns(self):
         '''Use internet host provided DNS servers'''
-        settings = LanSettings()
-        settings.parseXML(self.getLanSettings())
-        settings.setDnsAutomatic()
-        data = settings.buildXML()
-        return self.__api("api/dhcp/settings", data)
+        config = xmlobjects.LanSettings()
+        config.parseXML(self.getLanSettings())
+        config.setDnsAutomatic()
+        data = config.buildXML()
+        return self.api('api/dhcp/settings', data)
 
-    def setAllLanSettings(self, settings):
+    def setAllLanSettings(self, config):
         '''Manually set all lan settings'''
-        data = settings.buildXML()
-        return self.__api("api/dhcp/settings", data)
+        data = config.buildXML()
+        return self.api('api/dhcp/settings', data)
 
-    def setStaticHosts(self, settings):
+    def setStaticHosts(self, config):
         '''Set static host IP Addresses'''
-        data = settings.buildXML()
-        return self.__api("api/dhcp/static-addr-info", data)
+        data = config.buildXML()
+        return self.api('api/dhcp/static-addr-info', data)
+
+    def clearTrafficStats(self):
+        '''Clear the monthly statictics'''
+        config = xmlobjects.CustomXml({'ClearTraffic': 1})
+        data = config.buildXML()
+        return self.api('api/monitoring/clear-traffic', data)
