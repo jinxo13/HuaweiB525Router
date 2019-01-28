@@ -14,7 +14,7 @@ You can use the ```testFeatures``` function to determine what is supported for y
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
 - Additional custom API calls like getSignalStrength() - returns strength rating of 0 - 5
 
-Example usage is as follows:
+## Example usage
 ```
     #Connect to the router
     router = B525Router(router='192.168.8.1', username='admin', password='xxx')
@@ -68,7 +68,8 @@ Here's an example reponse (for ```getInfo()```):
 </response>
 ```
 
-Currently supported calls:
+## Supported Calls
+Direct GET and POST API calls can be made as well, as shown in the Example Usage above.
 ```
 GET Requests
 ----------
