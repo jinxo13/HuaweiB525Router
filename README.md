@@ -35,7 +35,7 @@ You can use the ```testFeatures``` function to determine what is supported for y
     response = router.api('api/device/information')
 
     #Make a custom GET POST call, does a reboot
-    request = '<?xml version="1.0" encoding="UTF-8"?><request><Control>1</Control></request>
+    request = '<?xml version="1.0" encoding="UTF-8"?><request><Control>1</Control></request>'
     response = router.api('api/device/control', request)
 
     #Logout
