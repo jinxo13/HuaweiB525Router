@@ -16,7 +16,7 @@ You can use the ```testFeatures``` function to determine what is supported for y
 - For Optus Australia users allows setting DNS and Port Forwarding which is either hidden or disabled in the Web UI
 
 ## Example usage
-```
+```python
    from router import B525Router
    import xmlobjects
    
@@ -67,7 +67,7 @@ You can use the ```testFeatures``` function to determine what is supported for y
 ```
 
 Here's an example reponse (for ```getInfo()```):
-```
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <response>
    <DeviceName>B525s-65a</DeviceName>
@@ -134,7 +134,7 @@ clearVirtualServers()
 ```
 
 ## Results of testFeatures() for B525-65a
-```
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <response>
    <DeviceName>B525s-65a</DeviceName>
