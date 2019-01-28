@@ -16,6 +16,8 @@ You can use the ```testFeatures``` function to determine what is supported for y
 
 ## Example usage
 ```
+    from router import B525Router
+    
     #Connect to the router
     router = B525Router(router='192.168.8.1', username='admin', password='xxx')
 
