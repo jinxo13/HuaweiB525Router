@@ -28,7 +28,7 @@ You can use the ```testFeatures``` function to determine what is supported for y
     response = router.getInfo() #Calls http://192.168.8.1/api/device/information
 
     #Reboot
-    response = router.reboot()
+    response = router.doReboot()
 
     #Configure MAC filtering to blacklist MAC addresses
     response = router.setDenyMacFilter(['XX:XX:XX:XX:XX:XX', 'YY:YY:YY:YY:YY:YY'])
