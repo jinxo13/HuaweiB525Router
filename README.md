@@ -13,7 +13,7 @@ You can use the ```testFeatures``` function to determine what is supported for y
 - SCRAM authentication model Huawei are using on some routers - based on the initial code from Marcin: https://github.com/mkorz/b618reboot
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
 - Additional custom API calls like getSignalStrength() - returns strength rating of 0 - 5
-- For Optus Australia users allows setting DNS and Port Forwarding which is eith hidden or disabled in the Web UI
+- For Optus Australia users allows setting DNS and Port Forwarding which is either hidden or disabled in the Web UI
 
 ## Example usage
 ```
