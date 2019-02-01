@@ -27,13 +27,13 @@ You can use the ```testFeatures``` function to determine what is supported for y
    response = router.testFeatures()
 
    #Get the router detailed information
-   response = router.getInfo() #Calls http://192.168.8.1/api/device/information
+   response = router.device.getInfo() #Calls http://192.168.8.1/api/device/information
 
    #Reboot
-   response = router.doReboot()
+   response = router.device.doReboot()
 
    #Configure MAC filtering to blacklist MAC addresses
-   response = router.setDenyMacFilter(['XX:XX:XX:XX:XX:XX', 'YY:YY:YY:YY:YY:YY'])
+   response = router.security.setDenyMacFilter(['XX:XX:XX:XX:XX:XX', 'YY:YY:YY:YY:YY:YY'])
 
    #Make a custom GET API call
    response = router.api('api/device/information')
@@ -46,21 +46,21 @@ You can use the ```testFeatures``` function to determine what is supported for y
    config = xmlobjects.VirtualServers()
    config.addUdpService('IPSEC1',500,500,'192.168.8.11')
    config.addUdpService('IPSEC2',4500,4500,'192.168.8.11')
-   response = router.setVirtualServer(config)
+   response = router.wan.setVirtualServer(config)
 
    #Configure some LAN settings
    config = xmlobjects.LanSettings()
    config.setDnsManual('192.168.8.11','192.168.8.1')
    config.setLanAddress('192.168.8.1','255.255.255.0','homerouter.cpe')
    config.setDhcpOn('192.168.8.100','192.168.8.200',86400)
-   response = router.setAllLanSettings(config)
+   response = router.lan.setAllLanSettings(config)
 
    #Setup some static hosts
    config = xmlobjects.StaticHosts()
    config.addHost('e7:4e:08:31:61:ba','192.168.8.11')
    config.addHost('b8:29:eb:dd:0d:c1','192.168.8.10')
    config.addHost('f0:03:8f:b3:1c:9a','192.168.8.12')
-   response = router.setStaticHosts(config)
+   response = router.lan.setStaticHosts(config)
 
    #Logout
    response = router.logout()
@@ -98,39 +98,48 @@ Direct GET and POST API calls can be made as well, as shown in the Example Usage
 ```
 GET Requests
 ----------
-getInfo()           => api/device/information
-getTraffic()        => api/monitoring/traffic-statistics
-getStats()          => api/monitoring/month_statistics")
-getClients()        => api/wlan/host-list
-getAllClients()     => api/lan/HostInfo
-getSignal()         => api/device/signal
-getMacFilter()      => api/security/mac-filter
-getLanSettings()    => api/dhcp/settings
-getStaticHosts()    => api/dhcp/static-addr-info
-getBridgeMode()     => api/security/bridgemode (Not supported on B525)
-getTimeRule()       => api/timerule/timerule (Not supported on B525)
-getCircleLed()      => api/led/circle-switch (Not supported on B525)
-getVirtualServers() => api/security/virtual-servers
-getSignalStrength() => Custom - returns signal strength between 0 and 5 based on rsrp value
+device.getInfo()           => api/device/information
+device.getSignal()         => api/device/signal
+device.getBridgeMode()     => api/security/bridgemode (Not supported on B525)
+device.getCircleLed()      => api/led/circle-switch (Not supported on B525)
+device.getSignalStrength() => Custom - returns signal strength between 0 and 5 based on rsrp value
+
+monitoring.getTraffic()    => api/monitoring/traffic-statistics
+monitoring.getStats()      => api/monitoring/month_statistics")
+
+lan.getClients()           => api/wlan/host-list
+lan.getAllClients()        => api/lan/HostInfo
+lan.getLanSettings()       => api/dhcp/settings
+lan.getStaticHosts()       => api/dhcp/static-addr-info
+
+security.getTimeRule()     => api/timerule/timerule (Not supported on B525)
+security.getMacFilter()    => api/security/mac-filter
+
+wan.getVirtualServers()    => api/security/virtual-servers
 
 POST Requests
 -------------
-doReboot()
-doPowerOff()
 logout()
-setDenyMacFilter(macs)
-setAllowMacFilter(macs)
-setMacFilterOff()
-setDhcpOff()
-setDhcpOn(startAddress, endAddress, leaseTime=86400)
-setLanAddress(ipaddress, netmask='255.255.255.0', url='homerouter.cpe')
-setManualDns(primaryDns, secondaryDns='')
-setAutomaticDns()
-setAllLanSettings(settings)
-setStaticHosts(settings)
-clearTrafficStats()
-setVirtualServers(servers)
-clearVirtualServers()
+
+device.doReboot()
+device.doPowerOff()
+
+security.setDenyMacFilter(macs)
+security.setAllowMacFilter(macs)
+security.setMacFilterOff()
+
+lan.setDhcpOff()
+lan.setDhcpOn(startAddress, endAddress, leaseTime=86400)
+lan.setLanAddress(ipaddress, netmask='255.255.255.0', url='homerouter.cpe')
+lan.setManualDns(primaryDns, secondaryDns='')
+lan.setAutomaticDns()
+lan.setAllLanSettings(settings)
+lan.setStaticHosts(settings)
+
+montitoring.clearTrafficStats()
+
+wan.setVirtualServers(servers)
+wan.clearVirtualServers()
 ```
 
 ## Results of testFeatures() for B525-65a

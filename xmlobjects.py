@@ -6,7 +6,7 @@ class xmlobject(object):
 
     def getPropertyNames(self):
         result = []
-        for property, value in vars(self).iteritems():
+        for property in vars(self).keys():
             result.append(property)
         return result
 
@@ -67,10 +67,13 @@ class Error(xmlobject):
             self.message = RouterError.getErrorMessage(self.code)
             
 class Function(xmlobject):
-    def __init__(self, name, url):
+    def __init__(self, typ, name, url):
+        self.Type = typ
         self.Name = name
         self.Url = url
         self.Error = ''
+    def getPropertyNames(self):
+        return ['Type','Name','Url','Error']
 
 class TestFunctions(xmlobject):
     def __init__(self):
@@ -87,8 +90,8 @@ class TestFunctions(xmlobject):
     def getPropertyNames(self):
         return ['DeviceName','ProductFamily','HardwareVersion','SoftwareVersion','WebUIVersion','MacAddress1','MacAddress2','Failed','Passed']
 
-    def addFunction(self, name, url, response):
-        func = Function(name, url)
+    def addFunction(self, obj, name, url, response):
+        func = Function(obj.__class__.__name__, name, url)
         if (RouterError.hasError(response)):
             error = Error()
             error.parseXML(response)
