@@ -31,6 +31,7 @@ class routerObject(object):
     def __init__(self, router):
         self.router = router
         self.api = router.api
+        self.apiEncrypt = router.apiEncrypt
 
 class Lan(routerObject):
     @getapi(api='dhcp/settings')
@@ -111,7 +112,7 @@ class Device(routerObject):
         rsrp = int(root.findall('./rsrp')[0].text[:-3])
         rsrp_q=utils.getRange([-90, -105, -112, -125, -136], rsrp)
         result = xmlobjects.CustomXml({'SignalStrength': 5-rsrp_q})
-        return result.buildXML(root='response')
+        return result.buildXmlResponse()
 
     def doReboot(self):
         '''Reboot the router'''
@@ -163,7 +164,12 @@ class Monitoring(routerObject):
     @getapi(api='monitoring/check-notifications')
     def getNotifications(self): pass
     def clearTrafficStats(self):
-        '''Clear the monthly statictics'''
+        '''
+        Clear the monthly statictics
+        NOTE: The StartDay value in monitoring/start-date will trigger an automatic reset
+        of the monthly statistics. For example StartDay=1, on 1st of month at 00:00 the
+        monthly statistics will be reset.
+        '''
         config = xmlobjects.CustomXml({'ClearTraffic': 1})
         data = config.buildXML()
         return self.api('monitoring/clear-traffic', data)
@@ -171,12 +177,8 @@ class Monitoring(routerObject):
     def getTrafficAlert(self): pass
     def setTrafficAlert(self, start_day, data_limit, threshhold):
         '''
-        <StartDay>1</StartDay>
-        <DataLimit>0MB</DataLimit>
-        <DataLimitAwoke>0</DataLimitAwoke>
-        <MonthThreshold>90</MonthThreshold>
-        <SetMonthData>0</SetMonthData>
-        <trafficmaxlimit>0</trafficmaxlimit>
+        #TODO: Determine if the following are implementable
+        <trafficmaxlimit>0</trafficmaxlimit> #Looks to be dynamically determined based on DataLimit
         <turnoffdataenable>0</turnoffdataenable>
         <turnoffdataswitch>0</turnoffdataswitch>
         <turnoffdataflag>0</turnoffdataflag>            
@@ -184,22 +186,55 @@ class Monitoring(routerObject):
         xml = xmlobjects.CustomXml({
             'StartDay': start_day,
             'DataLimit': data_limit,
+            'DataLimitAwoke': 0,
             'MonthThreshold': threshhold,
             'SetMonthData': 1
             })
         data = xml.buildXML()
-        self.api('monitoring/start_date', data)
+        return self.api('monitoring/start_date', data)
 
 class Wan(routerObject):
     @getapi(api='security/virtual-servers')
     def getVirtualServer(self): pass
-    def setVirtualServer(self, servers):
-        data = servers.buildXML()
+    def setVirtualServer(self, config):
+        data = config.buildXML()
         return self.api('security/virtual-servers', data)
     def clearVirtualServer(self):
         config = xmlobjects.CustomXml({'Servers': ''})
         return self.setVirtualServer(config)
-
+    @getapi(api='ddns/ddns-list')
+    def getDdns(self): pass
+    def addDdns(self, config):
+        #TODO: Test more than one actually works...
+        #TODO: Consider changing to just pass params
+        config.setToAdd()
+        data = config.buildXML()
+        return self.apiEncrypt('ddns/ddns-list', data)
+    def editDdns(self, config):
+        #TODO: Test more than one actually works...
+        #TODO: Consider changing to just pass params
+        xml = ET.fromstring(self.getDdns())
+        config.setToEdit()
+        for ddns in config.ddnss:
+            domain = ddns.domainname
+            ele = xml.findall('.//ddns[domainname="%s"]' % ddns.domain)
+            if (len(ele) == 0):
+                return xmlobjects.Error.customError('editDns', 'Unable to find domain: %s' % domain).buildXmlError()
+            ddns.index = ele[0].find('.//index').text
+        data = config.buildXML()
+        return self.apiEncrypt('ddns/ddns-list', data)
+    def deleteDdns(self, domain):
+        #TODO: Test more than one actually works...
+        xml = ET.fromstring(self.getDdns())
+        ele = xml.findall('.//ddns[domainname="%s"]' % domain)
+        if (len(ele) == 0):
+            return xmlobjects.Error.customError('deleteDns', 'Unable to find domain: %s' % domain).buildXmlError()
+        index = ele[0].find('.//index').text
+        config = xmlobjects.DdnsCollection()
+        config.setToDelete()
+        config.ddnss.append(xmlobjects.CustomXml({'index': index}, 'ddns'))
+        data = config.buildXML()
+        return self.apiEncrypt('ddns/ddns-list', data)
 
 class B525Router(object):
     LOGIN_TIMEOUT=300 #5 minutes
@@ -279,26 +314,52 @@ class B525Router(object):
             raise RouterError(result.text)
         verification_token = result.headers['__RequestVerificationTokenone']
         self.lastLogin = datetime.now()
+
+        '''
+        The SCRAM protocol would normally validate the server signatures
+        We're assuming this is ok
+        e.g.
+        var serverProof = scram.serverProof(psd, salt, iter, authMsg);
+        if (ret.response.serversignature == serverProof) {
+        var publicKeySignature = scram.signature(CryptoJS.enc.Hex.parse(ret.response.rsan), CryptoJS.enc.Hex.parse(serverKey)).toString();
+        if (ret.response.rsapubkeysignature == publicKeySignature) {
+        '''
+        xml = ET.fromstring(result.text)
+        self.__rsae = xml.find('.//rsae').text
+        self.__rsan = xml.find('.//rsan').text
+        logging.warn('rsan: %s' % self.__rsan)
+        logging.warn('rsae: %s' % self.__rsae)
         return verification_token
 
-    def api(self, api_url, data=None):
+    def apiEncrypt(self, url, data):
+        return self.api(url=url, data=data, encrypted=True)
+
+    def api(self, url, data=None, encrypted=False):
         """ Handles all api calls to the router """
         if (self.client is None):
             self.client = requests.Session()
         verification_token = self.__login()
-        url = "http://%s/api/%s" % (self.router, api_url)
-        headers = {'Content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            '__RequestVerificationToken': verification_token}
+        url = "http://%s/api/%s" % (self.router, url)
+        headers = {}
+        headers['__RequestVerificationToken'] = verification_token
+        if (encrypted):
+            headers['Content-type']='application/x-www-form-urlencoded; charset=UTF-8;enc'
+        else:
+            headers['Content-type']='application/x-www-form-urlencoded; charset=UTF-8'
         if (data == None):
             response = self.client.get(url, headers=headers).text
         else:
-            response = self.client.post(url, data=data, headers=headers).text
+            if (encrypted):
+                encdata = crypto.rsa_encrypt(self.__rsae, self.__rsan, data)
+                response = self.client.post(url, data=encdata, headers=headers).text    
+            else:
+                response = self.client.post(url, data=data, headers=headers).text
 
         #Add error message if known and missing
         if RouterError.hasError(response):
             error = xmlobjects.Error()
             error.parseXML(response)
-            response = error.buildXML(root='error')
+            response = error.buildXmlError()
         return response
 
 
@@ -325,7 +386,7 @@ class B525Router(object):
                     func = getattr(ob, f)
                     result.addFunction(ob, f, api, func())
             
-        return result.buildXML(root='response')
+        return result.buildXmlResponse()
 
     def logout(self):
         '''Logout user'''

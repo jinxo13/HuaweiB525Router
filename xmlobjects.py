@@ -13,6 +13,12 @@ class xmlobject(object):
     def getValue(self, property):
         return getattr(self, property)
 
+    def getElementName(self):
+        return self.__class__.__name__
+
+    def buildXmlRequest(self): return self.buildXML(root='request')
+    def buildXmlResponse(self): return self.buildXML(root='response')
+    def buildXmlError(self): return self.buildXML(root='error')
     def buildXML(self, header=True, root='request'):
         result = []
         if (header):
@@ -24,15 +30,15 @@ class xmlobject(object):
             if (type(value) is list):
                 for v in value:
                     if (issubclass(type(v), xmlobject)):
-                        result.extend(['<', type(v).__name__, '>'])
+                        result.extend(['<', v.getElementName(), '>'])
                         result.append(v.buildXML(False))
-                        result.extend(['</', type(v).__name__, '>'])
+                        result.extend(['</', v.getElementName(), '>'])
                     else:
                         result.append(v.buildXML(False))
             elif (issubclass(type(value), xmlobject)):
-                result.extend(['<', type(value).__name__, '>'])
+                result.extend(['<', v.getElementName(), '>'])
                 result.append(value.buildXML(False))
-                result.extend(['</', type(value).__name__, '>'])
+                result.extend(['</', v.getElementName(), '>'])
             else:
                 result.append(str(value))
             result.extend(['</', property, '>'])
@@ -56,9 +62,18 @@ class xmlobject(object):
                     setattr(self, property, val)
 
 class Error(xmlobject):
-    def __init__(self):
-        self.code = -1
-        self.message = ''
+    PYTHON_API_ERROR_CODE=2000
+
+    def __init__(self, code=0, msg=''):
+        self.code = code
+        self.message = msg
+
+    @classmethod
+    def customError(cls, call, err):
+        code = cls.PYTHON_API_ERROR_CODE
+        msg = RouterError.getErrorMessage(code)
+        error = Error(code, msg % (call, err))
+        return error
 
     def parseXML(self, xmlText):
         super(Error, self).parseXML(xmlText)
@@ -208,12 +223,17 @@ class Host(xmlobject):
         self.HostEnabled = 1
 
 class CustomXml(xmlobject):
-    def __init__(self, props):
+    def __init__(self, props, element_name=None):
+        if element_name is None:
+            element_name = self.__class__.__name__
+        self.ele_name = element_name
         self.vals = props.copy()
     def getPropertyNames(self):
         return self.vals.keys()
     def getValue(self, property):
         return self.vals[property]
+    def getElementName(self): return self.ele_name
+
 
 class RouterControl(xmlobject):
     NONE = -1
@@ -228,3 +248,47 @@ class RouterControl(xmlobject):
     @classmethod
     def poweroff(cls): return RouterControl(cls.POWEROFF)
 
+class ddns(xmlobject):
+    # <ddnss>
+    # <ddns>
+    # <username>hamish.mcneish@gmail.com</username>
+    # <index>1</index>
+    # <status>1</status>
+    # <domainname>hmcneish.ddns.net</domainname>
+    # <password>********</password>
+    # <provider>No-IP.com</provider>
+    # </ddns></ddnss>
+    def __init__(self, username, password, domain, provider):
+        self.username = username
+        self.password = password
+        self.domainname = domain
+        self.provider = provider
+        self.status = 1
+        self.index = 0
+
+class DdnsCollection(xmlobject):
+    OPERATE_ADD = 1
+    OPERATE_DELETE = 2
+    OPERATE_EDIT = 3
+    PROVIDER_DYNDNS = "DynDNS.org"
+    PROVIDER_NOIP = "No-IP.com"
+    PROVIDER_ORAY = "oray"
+    def __init__(self):
+        self.ddnss = []
+        self.operate = self.OPERATE_ADD
+    def addNoIpDdns(self, username, password, domain):
+        return self.addDdns(username, password, domain, self.PROVIDER_NOIP)
+    def addDynDnsDdns(self, username, password, domain):
+        return self.addDdns(username, password, domain, self.PROVIDER_DYNDNS)
+    def addOrayDdns(self, username, password, domain):
+        return self.addDdns(username, password, domain, self.PROVIDER_ORAY)
+    def addDdns(self, username, password, domain, provider):
+        rec = ddns(username, password, domain, provider)
+        rec.index = len(self.ddnss)
+        self.ddnss.append(rec)
+    def setToAdd(self):
+        self.operate = self.OPERATE_ADD
+    def setToDelete(self):
+        self.operate = self.OPERATE_DELETE
+    def setToEdit(self):
+        self.operate = self.OPERATE_EDIT

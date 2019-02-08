@@ -14,6 +14,7 @@ You can use the ```testFeatures``` function to determine what is supported for y
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
 - Additional custom API calls like getSignalStrength() - returns strength rating of 0 - 5
 - For Optus Australia users allows setting DNS and Port Forwarding which is either hidden or disabled in the Web UI
+- Support settings where the router requires an encrypted request
 
 ## Example usage
 ```python
@@ -63,6 +64,12 @@ You can use the ```testFeatures``` function to determine what is supported for y
       config.addHost('b8:29:eb:dd:0d:c1','192.168.8.10')
       config.addHost('f0:03:8f:b3:1c:9a','192.168.8.12')
       response = router.lan.setStaticHosts(config)
+
+      #Setup DDNS
+      config = xmlobjects.DdnsCollection()
+      config.addNoIpDdns('bilbo.baggins@gmail.com','elevenses','bilbo.ddns.net')
+      logging.warn(config.buildXML())
+      response = router.wan.addDdns(config)
 
       #Logout
       response = router.logout()

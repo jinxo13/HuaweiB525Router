@@ -3,6 +3,7 @@ import xmlobjects
 class RouterError(Exception):
 
     __ERRORS = [
+        [2000, 'Python API: %s - %s'],
         [100001, 'An unkown error occurred'],
         [100002, 'The router does not support this function'],
         [100003, 'You have no rights to access this function'],
