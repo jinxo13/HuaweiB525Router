@@ -487,6 +487,8 @@ class B525Router(object):
 
     def __setup_session(self):
         """ gets the url from the server ignoring the respone, just to get session cookie set up """
+        if not self.client is None:
+            self.client.close()
         self.client = requests.Session()
         url = "http://%s/" % self.router
         response = self.client.get(url)
@@ -581,6 +583,7 @@ class B525Router(object):
         #Check if the session has timed out, and login again if it has
         timed_out = datetime.now() - self.__last_login
         if (timed_out.total_seconds() > self.__timeout and self.__is_logged_in):
+            logging.warn('**** Timed-out - establish new login ****')
             verification_token = self.__login()
         else:
             verification_token = self.__get_server_token()[32:]
@@ -646,5 +649,5 @@ class B525Router(object):
         '''Logout user'''
         response = self.api('user/logout', {'Logout': 1})
         self.__is_logged_in = False
-        self.client = None
+        self.client.close()
         return response
