@@ -483,15 +483,13 @@ class B525Router(object):
         self.__password = password
         self.__timeout = keepalive
         self.__login()
-        self.__is_logged_in = True
 
     def __setup_session(self):
-        """ gets the url from the server ignoring the respone, just to get session cookie set up """
-        if not self.client is None:
-            self.client.close()
-        self.client = requests.Session()
+        """ gets the url from the server ignoring the response, just to get session cookie set up """
+        if self.client is None:
+            self.client = requests.Session()
         url = "http://%s/" % self.router
-        response = self.client.get(url)
+        response = self.__get(url)
         response.raise_for_status()
         # will have to debug this one as without delay here it was throwing
         # a buffering exception on one of the machines
@@ -500,7 +498,7 @@ class B525Router(object):
     def __get_server_token(self):
         """ retrieves server token """
         url = "http://%s/api/webserver/token" % self.router
-        token_response = self.client.get(url).text
+        token_response = self.__get(url).text
         if RouterError.hasError(token_response):
             raise RouterError(token_response)
         root = ET.fromstring(token_response)
@@ -554,6 +552,7 @@ class B525Router(object):
         xml = ET.fromstring(result.text)
         self.__rsae = xml.find('.//rsae').text
         self.__rsan = xml.find('.//rsan').text
+        self.__is_logged_in = True
         return verification_token
 
     def enc_api(self, url, data):
@@ -577,16 +576,30 @@ class B525Router(object):
         logging.debug('-------------')
         return result
 
+    def __get(self, url, headers=None):
+        logging.debug('------------ REQUEST to %s -------------', url)
+        logging.debug('-- HEADERS --')
+        logging.debug('%s', headers)
+        logging.debug('-------------')
+        result = self.client.get(url, headers=headers)
+        logging.debug('------------ RESPONSE to %s -------------', url)
+        logging.debug('-- HEADERS --')
+        logging.debug('%s', result.headers)
+        logging.debug('-------------')
+        logging.debug('-- DATA --')
+        logging.debug('%s', result.text)
+        logging.debug('-------------')
+        return result
+        
     @post_api
     def api(self, url, data=None, encrypted=False):
         """ Handles all api calls to the router """
         #Check if the session has timed out, and login again if it has
         timed_out = datetime.now() - self.__last_login
-        if (timed_out.total_seconds() > self.__timeout and self.__is_logged_in):
-            logging.warn('**** Timed-out - establish new login ****')
-            verification_token = self.__login()
-        else:
-            verification_token = self.__get_server_token()[32:]
+        if (timed_out.total_seconds() >= self.__timeout and self.__is_logged_in):
+            logging.debug('Sessoin timeout - establishing new login...')
+            self.__login()
+        verification_token = self.__get_server_token()[32:]
 
         if isinstance(data, dict):
             data = xmlobjects.CustomXml(data).buildXML()
@@ -601,7 +614,7 @@ class B525Router(object):
         else:
             headers['Content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
         if data is None or data == '':
-            response = self.client.get(url, headers=headers).text
+            response = self.__get(url, headers).text
         else:
             if encrypted:
                 data = crypto.rsa_encrypt(self.__rsae, self.__rsan, data)
@@ -649,5 +662,7 @@ class B525Router(object):
         '''Logout user'''
         response = self.api('user/logout', {'Logout': 1})
         self.__is_logged_in = False
-        self.client.close()
+        if not self.client is None:
+            self.client.close()
+            self.client = None
         return response
