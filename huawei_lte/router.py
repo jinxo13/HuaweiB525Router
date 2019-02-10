@@ -487,8 +487,7 @@ class B525Router(object):
 
     def __setup_session(self):
         """ gets the url from the server ignoring the respone, just to get session cookie set up """
-        if self.client is None:
-            self.client = requests.Session()
+        self.client = requests.Session()
         url = "http://%s/" % self.router
         response = self.client.get(url)
         response.raise_for_status()
@@ -647,5 +646,5 @@ class B525Router(object):
         '''Logout user'''
         response = self.api('user/logout', {'Logout': 1})
         self.__is_logged_in = False
-        self.__setup_session()
+        self.client = None
         return response

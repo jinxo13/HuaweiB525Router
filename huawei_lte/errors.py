@@ -54,7 +54,7 @@ class RouterError(Exception):
         code = int(code)
         for err in cls.__ERRORS:
             if (err[0] == code): return err[1]
-        return 'No known error message for this code'
+        return 'An unknown error occurred'
 
     def __init__(self, response):
         error = xmlobjects.Error()

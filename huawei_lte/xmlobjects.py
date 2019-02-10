@@ -18,6 +18,8 @@ class XmlObject(object):
     def getPropertyNames(self):
         result = []
         for prop in vars(self).keys():
+            if (prop[:1] == '_'):
+                continue
             result.append(prop)
         return result
 
@@ -157,7 +159,15 @@ class VirtualServerCollection(XmlObject):
         return None
 
     def add_service(self, config):
-        self.Servers.append(VirtualServer(config))
+        found = False
+        newserver = VirtualServer(config)
+        for server in self.Servers:
+            if server.VirtualServerIPName == newserver.VirtualServerIPName:
+                found = True
+                break
+        if found:
+            raise ValueError('Unable to add port forward [%s], it already exists!' % newserver.VirtualServerIPName)
+        self.Servers.append(newserver)
 
     def remove_service(self, name):
         found = False
@@ -167,7 +177,7 @@ class VirtualServerCollection(XmlObject):
                 found = True
                 break
         if not found:
-            raise ValueError('No existing port forward named [%s] was found' % name)
+            raise ValueError('Unable to delete port forward [%s], it does not exist' % name)
 
     def add_udp_service(self, config):
         config['protocol'] = 'UDP'
