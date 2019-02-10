@@ -7,6 +7,9 @@ from huawei_lte.errors import RouterError
 class XmlObject(object):
     '''A simple object to handle XML object serialisation'''
 
+    def __init__(self, settings=None):
+        self._SKIP_BLANK = self._get_param(settings, 'skip_blanks', False)
+
     @classmethod
     def _get_param(cls, vals, key, default=None):
         return utils.get_param(vals, key, default)
@@ -33,6 +36,9 @@ class XmlObject(object):
             result.append('<'+root+'>')
         for prop in self.getPropertyNames():
             value = self.getValue(prop)
+            skip_blank = self._SKIP_BLANK and (value is None or value == '')
+            if skip_blank or prop[:1] == '_':
+                continue
             result.extend(['<', prop, '>'])
             if (type(value) is list):
                 for v in value:
@@ -84,6 +90,7 @@ class Error(XmlObject):
     PYTHON_API_ERROR_CODE=2000
 
     def __init__(self, code=0, msg=''):
+        super(Error, self).__init__()
         self.code = code
         self.message = msg
 
@@ -102,15 +109,17 @@ class Error(XmlObject):
             
 class Function(XmlObject):
     def __init__(self, typ, name, url):
-        self.Type = typ
-        self.Name = name
-        self.Url = url
+        super(Function, self).__init__({'skip_blanks': True})
+        self.Name = '%s.%s' % (typ.lower(), name)
+        self.Url = 'api/%s' % url
         self.Error = ''
+
     def getPropertyNames(self):
-        return ['Type','Name','Url','Error']
+        return ['Name','Url','Error']
 
 class TestFunctions(XmlObject):
     def __init__(self):
+        super(TestFunctions, self).__init__()
         self.DeviceName = ''
         self.ProductFamily = ''
         self.HardwareVersion = ''
@@ -136,6 +145,7 @@ class TestFunctions(XmlObject):
 
 class VirtualServerCollection(XmlObject):
     def __init__(self):
+        super(VirtualServerCollection, self).__init__()
         self.Servers = []
 
     def child(self, name, xml):
@@ -168,6 +178,7 @@ class VirtualServer(XmlObject):
     PROTOCOLS = {'UDP': 17, 'TCP': 6, 'BOTH': 0}
     def __init__(self, config):
         #Define properties first to support XML serialisation
+        super(VirtualServer, self).__init__()
         self.VirtualServerIPName = ''
         self.VirtualServerStatus = 1
         self.VirtualServerRemoteIP = ''
@@ -206,6 +217,7 @@ class VirtualServer(XmlObject):
 
 class LanSettings(XmlObject):
     def __init__(self):
+        super(LanSettings, self).__init__()
         self.DhcpLanNetmask = '255.255.255.0'
         self.homeurl = 'homerouter.cpe'
         self.DnsStatus = 1
@@ -255,6 +267,7 @@ class LanSettings(XmlObject):
 
 class MacFilter(XmlObject):
     def __init__(self, value):
+        super(MacFilter, self).__init__()
         if not utils.isMacValid(value):
             raise ValueError("Invalid MAC Address to filter: %s" % value)
         self.value=value
@@ -268,6 +281,7 @@ class MacFilterCollection(XmlObject):
     MODE_ALLOW=1
     MODE_DENY=2
     def __init__(self):
+        super(MacFilterCollection, self).__init__()
         self.policy=self.MODE_DENY
         self.macfilters=[]
     def setAllow(self): self.policy=self.MODE_ALLOW
@@ -278,6 +292,7 @@ class MacFilterCollection(XmlObject):
 
 class StaticHostCollection(XmlObject):
     def __init__(self):
+        super(StaticHostCollection, self).__init__()
         self.Hosts = []
     
     def hasHost(self, mac):
@@ -317,6 +332,7 @@ class StaticHostCollection(XmlObject):
 
 class StaticHost(XmlObject):
     def __init__(self, config):
+        super(StaticHost, self).__init__()
         self.HostIndex = 0
         self.HostHw = ''
         self.HostIp = ''
@@ -336,6 +352,7 @@ class StaticHost(XmlObject):
 
 class CustomXml(XmlObject):
     def __init__(self, props, element_name=None):
+        super(CustomXml, self).__init__()
         if element_name is None:
             element_name = self.__class__.__name__
         self.ele_name = element_name
@@ -351,6 +368,7 @@ class RouterControl(XmlObject):
     REBOOT = 1
     POWEROFF = 4
     def __init__(self, control):
+        super(RouterControl, self).__init__()
         self.Control = control
     
     @classmethod
@@ -362,6 +380,7 @@ class RouterControl(XmlObject):
 class Ddns(XmlObject):
     PROVIDERS = ["DynDNS.org", "No-IP.com", "oray"]
     def __init__(self, config):
+        super(Ddns, self).__init__()
         provider = self._get_param(config, 'provider')
         if (not provider in self.PROVIDERS):
             raise ValueError('Invalid DDNS service provided, it must be one of: [%s]' % ', '.join(self.PROVIDERS))
@@ -380,6 +399,7 @@ class DdnsCollection(XmlObject):
     OPERATE_DELETE = 2
     OPERATE_EDIT = 3
     def __init__(self):
+        super(DdnsCollection, self).__init__()
         self.ddnss = []
         self.operate = self.OPERATE_ADD
     def addNoIpDdns(self, config):

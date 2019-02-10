@@ -23,6 +23,11 @@ def getRange(vals, val):
     return 0
 
 def get_param(vals, key, default=None):
+    if vals is None:
+        if default is None:
+            raise ValueError('The expected parameter [%s] was not found in the supplied settings.' % key)
+        else:
+            return default
     if not key in vals:
         if default is None:
             raise ValueError('The expected parameter [%s] was not found in the supplied settings.' % key)

@@ -14,7 +14,7 @@ You can use the ```test_features``` function to determine what is supported for 
 - The test_features function will provide information about what API calls are supported by the router
 - SCRAM authentication model Huawei are using on some routers - based on the initial code from Marcin: https://github.com/mkorz/b618reboot
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
-- Additional custom API calls like getSignalStrength() - returns strength rating of 0 - 5
+- Additional custom API calls like ```router.device.signal_strength``` - returns strength rating of 0 - 5
 - Support settings where the router requires an encrypted request
 
 ## Example usage
@@ -175,76 +175,86 @@ Here's an example reponse (for ```router.device.info```):
    <HardwareVersion>WL2B520M</HardwareVersion>
    <SoftwareVersion>11.189.63.00.74</SoftwareVersion>
    <WebUIVersion>21.100.44.00.03</WebUIVersion>
-   <MacAddress1>D0:16:B4:F2:30:92</MacAddress1>
+   <MacAddress1>XX:XX:XX:XX:XX:XX</MacAddress1>
    <MacAddress2 />
    <Failed>
       <Function>
+         <Name>device.circleled</Name>
          <Url>api/led/circle-switch</Url>
-         <Name>getCircleLed</Name>
          <Error>100006: Parameter error</Error>
       </Function>
       <Function>
+         <Name>security.timerule</Name>
          <Url>api/timerule/timerule</Url>
-         <Name>getTimeRule</Name>
          <Error>100006: Parameter error</Error>
       </Function>
       <Function>
+         <Name>device.bridgemode</Name>
          <Url>api/security/bridgemode</Url>
-         <Name>getBridgeMode</Name>
          <Error>100002: The router does not support this function</Error>
       </Function>
    </Failed>
    <Passed>
       <Function>
-         <Url>api/dhcp/static-addr-info</Url>
-         <Name>getStaticHosts</Name>
-         <Error />
-      </Function>
-      <Function>
-         <Url>api/wlan/host-list</Url>
-         <Name>getClients</Name>
-         <Error />
-      </Function>
-      <Function>
-         <Url>api/user/history-login</Url>
-         <Name>getUserHistory</Name>
-         <Error />
-      </Function>
-      <Function>
-         <Url>api/lan/HostInfo</Url>
-         <Name>getAllClients</Name>
-         <Error />
-      </Function>
-      <Function>
+         <Name>device.info</Name>
          <Url>api/device/information</Url>
-         <Name>getInfo</Name>
-         <Error />
       </Function>
       <Function>
-         <Url>api/dhcp/settings</Url>
-         <Name>getLanSettings</Name>
-         <Error />
+         <Name>lan.current_clients</Name>
+         <Url>api/wlan/host-list</Url>
       </Function>
       <Function>
-         <Url>api/device/signal</Url>
-         <Name>getSignal</Name>
-         <Error />
+         <Name>monitoring.trafficalert</Name>
+         <Url>api/monitoring/start_date</Url>
       </Function>
       <Function>
+         <Name>monitoring.stats</Name>
          <Url>api/monitoring/month_statistics</Url>
-         <Name>getStats</Name>
-         <Error />
       </Function>
       <Function>
-         <Url>api/monitoring/traffic-statistics</Url>
-         <Name>getTraffic</Name>
-         <Error />
-      </Function>
-      <Function>
+         <Name>security.macfilter</Name>
          <Url>api/security/mac-filter</Url>
-         <Name>getMacFilter</Name>
-         <Error />
+      </Function>
+      <Function>
+         <Name>lan.settings</Name>
+         <Url>api/dhcp/settings</Url>
+      </Function>
+      <Function>
+         <Name>lan.static_hosts</Name>
+         <Url>api/dhcp/static-addr-info</Url>
+      </Function>
+      <Function>
+         <Name>lan.all_clients</Name>
+         <Url>api/lan/HostInfo</Url>
+      </Function>
+      <Function>
+         <Name>device.status</Name>
+         <Url>api/monitoring/status</Url>
+      </Function>
+      <Function>
+         <Name>user.last_login</Name>
+         <Url>api/user/history-login</Url>
+      </Function>
+      <Function>
+         <Name>wan.ddns</Name>
+         <Url>api/ddns/ddns-list</Url>
+      </Function>
+      <Function>
+         <Name>monitoring.traffic</Name>
+         <Url>api/monitoring/traffic-statistics</Url>
+      </Function>
+      <Function>
+         <Name>wan.port_forwards</Name>
+         <Url>api/security/virtual-servers</Url>
+      </Function>
+      <Function>
+         <Name>device.signal</Name>
+         <Url>api/device/signal</Url>
+      </Function>
+      <Function>
+         <Name>monitoring.notifications</Name>
+         <Url>api/monitoring/check-notifications</Url>
       </Function>
    </Passed>
-</response>
+</response
 ```
