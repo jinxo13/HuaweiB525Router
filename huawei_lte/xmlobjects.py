@@ -9,6 +9,7 @@ class XmlObject(object):
 
     def __init__(self, settings=None):
         self._SKIP_BLANK = self._get_param(settings, 'skip_blanks', False)
+        self._SKIP_CLASS_ELEMENT = self._get_param(settings, 'skip_class_element', False)
 
     @classmethod
     def _get_param(cls, vals, key, default=None):
@@ -43,9 +44,11 @@ class XmlObject(object):
             if (type(value) is list):
                 for v in value:
                     if (issubclass(type(v), XmlObject)):
-                        result.extend(['<', v.getElementName(), '>'])
+                        if not self._SKIP_CLASS_ELEMENT:
+                            result.extend(['<', v.getElementName(), '>'])
                         result.append(v.buildXML(False))
-                        result.extend(['</', v.getElementName(), '>'])
+                        if not self._SKIP_CLASS_ELEMENT:
+                            result.extend(['</', v.getElementName(), '>'])
                     else:
                         result.append(v.buildXML(False))
             elif (issubclass(type(value), XmlObject)):
@@ -215,6 +218,136 @@ class VirtualServer(XmlObject):
     def getElementName(self):
         return 'Server'
 
+class NetworkMode(XmlObject):
+    NET_MODES = {
+        'AUTO': '00',
+        '2G': '01', #GSM/GPRS/EDGE 850/900/1800/1900MHz
+        '3G': '02', #DC-HSPA+/HSPA+/UMTS Band 1/2/5/6/8/19
+        '4G': '03'} #Band 1/3/4/5/7/8/20/19/26/28/32/38/40/41
+
+    NET_BANDS = {
+        #2G Bands
+        'GSM1800':          '0x80',
+        'GSM900':          '0x300',
+        'GSM850':        '0x80000',
+        'GSM1900':      '0x200000',
+        #3G Bands
+        'W2100':        '0x400000',
+        'W1900':        '0x800000',
+        'W850':        '0x4000000',
+        'W900':  '0x2000000000000',
+        'W1700': '0x4000000000000',
+        #Unexplained values
+        'EXTRA': '0x1000000008000000'
+    }
+
+    LTE_BANDS = {
+        #Hex determined from integer 2 ** (bandnum-1)
+        'B1': 'FDD 2100 Mhz',
+        'B2': 'FDD 1900 Mhz',
+        'B3': 'FDD 1800 Mhz',
+        'B4': 'FDD 1700 Mhz',
+        'B5': 'FDD 850 Mhz',
+        'B6': 'FDD 800 Mhz',
+        'B7': 'FDD 2600 Mhz',
+        'B8': 'FDD 900 Mhz',
+        'B19': 'FDD 850 Mhz',
+        'B20': 'FDD 800 Mhz',
+        'B26': 'FDD 850 Mhz',
+        'B28': 'FDD 700 Mhz',
+        'B32': 'FDD 1500 Mhz',
+        'B38': 'TDD 2600 Mhz',
+        'B40': 'TDD 2300 Mhz',
+        'B41': 'TDD 2500 Mhz'}
+
+    @classmethod
+    def get_mode(cls, mode):
+        '''
+        Returns the matching mode key
+        '''
+        for key, val in cls.NET_MODES.items():
+            if val == mode:
+                return key
+        raise ValueError('No matching firendly mode name found for [%s]' % mode)
+
+    @classmethod
+    def lte_to_hex(cls, bands):
+        '''
+        Returns bands as hex
+        '''
+        result = 0
+        for band in bands:
+            result += 2 ** (int(band[1:]) - 1)
+        return hex(result)
+
+    @classmethod
+    def lte_from_hex(cls, hexnum):
+        '''
+        Returns list of bands from provided hex
+        '''
+        result = []
+        for band in cls.LTE_BANDS.keys():
+            bint = 2 ** (int(band[1:]) - 1)
+            if int(hexnum,16) & bint == bint:
+                result.append(band)
+        return result
+
+    @classmethod
+    def band_to_hex(cls, bands):
+        '''
+        Returns bands as hex
+        '''
+        result = 0
+        for band in bands:
+            result += int(cls.NET_BANDS[band], 16)
+        return hex(result)
+
+    @classmethod
+    def band_from_hex(cls, hexnum):
+        '''
+        Returns list of bands from provided hex
+        '''
+        result = []
+        for band, val in cls.NET_BANDS.items():
+            bint = int(val, 16)
+            if int(hexnum, 16) & bint == bint:
+                result.append(band)
+        return result
+
+    def __init__(self):
+        '''
+        <NetworkMode>00</NetworkMode>
+        <NetworkBand>100200000CE80380</NetworkBand>
+        <LTEBand>80080000C5</LTEBand>        
+        '''
+        super(NetworkMode, self).__init__()
+        self.NetworkMode = '00' #Automatic
+        self.NetworkBand = ''
+        self.LTEBand = ''
+
+    @classmethod
+    def __clean_hex(cls, hexnum):
+        return hexnum.replace('0x','').replace('L','').upper()
+
+    def set_lte_band(self, bands):
+        for band in bands:
+            if band not in self.LTE_BANDS.keys():
+                raise ValueError('Band [%s] is not a known LTE band. Expected format is B1, B2 etc...' % band)
+        hexnum = self.lte_to_hex(bands)
+        self.LTEBand = self.__clean_hex(hexnum)
+
+    def set_network_band(self, bands):
+        for band in bands:
+            if band not in self.NET_BANDS.keys():
+                raise ValueError('Band [%s] is not a known 2G/3G band. Expected format is GSM800, W1900, etc...' % band)
+        hexnum = self.band_to_hex(bands)
+        self.NetworkBand = self.__clean_hex(hexnum)
+
+    def set_network_mode(self, mode):
+        if mode not in self.NET_MODES.keys():
+            raise ValueError('Mode [%s] is not a known mode. Expected one of: %s' % (mode, self.NET_MODES.keys()))
+        self.NetworkMode = self.NET_MODES[mode]
+
 class LanSettings(XmlObject):
     def __init__(self):
         super(LanSettings, self).__init__()
@@ -352,7 +485,7 @@ class StaticHost(XmlObject):
 
 class CustomXml(XmlObject):
     def __init__(self, props, element_name=None):
-        super(CustomXml, self).__init__()
+        super(CustomXml, self).__init__({'skip_class_element': True})
         if element_name is None:
             element_name = self.__class__.__name__
         self.ele_name = element_name

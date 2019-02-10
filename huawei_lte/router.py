@@ -79,6 +79,10 @@ class Lan(RouterObject):
     def all_clients(self): pass
 
     @post_api
+    def set_settings(self, config):
+        return self.api('dhcp/settings', config)
+
+    @post_api
     def set_dhcp_off(self):
         '''Turn off routers DHCP function'''
         settings = xmlobjects.LanSettings()
@@ -225,6 +229,71 @@ class Device(RouterObject):
         data = control.buildXML()
         return self.api('device/control', data)
 
+class Network(RouterObject):
+    '''Network module'''
+    @property
+    @get_api(api='net/net-mode')
+    def mode(self):
+        pass
+
+    @property
+    @get_api(api='net/net-mode-list')
+    def modelist(self):
+        pass
+
+    @property
+    @post_api
+    def modelist2(self):
+        net = xmlobjects.NetworkMode()
+        net.parseXML(self.mode)
+
+        net_bands = []
+        for band in xmlobjects.NetworkMode.band_from_hex(net.NetworkBand):
+            if (band == 'EXTRA'):
+                continue
+            net_bands.append(xmlobjects.CustomXml({'Band': band}))
+
+        lte_bands = []
+        for band in xmlobjects.NetworkMode.lte_from_hex(net.LTEBand):
+            lte_bands.append(xmlobjects.CustomXml({'Band': band}))
+        xml = xmlobjects.CustomXml({
+            'NetworkMode': xmlobjects.NetworkMode.get_mode(net.NetworkMode),
+            'NetworkBands': net_bands,
+            'LTEBands': lte_bands
+        })
+        return xml.buildXmlResponse()
+
+    @post_api
+    def set_lte_band(self, config):
+        '''
+        <NetworkMode>00</NetworkMode>
+        <NetworkBand>100200000CE80380</NetworkBand>
+        <LTEBand>80080000C5</LTEBand>
+        '''
+        bands = self._get_param(config, 'bands')
+        net = xmlobjects.NetworkMode()
+        net.parseXML(self.mode)
+        net.set_lte_band(bands)
+        return self.api('net/net-mode', net)
+    
+    @post_api
+    def set_network_band(self, config):
+        bands = self._get_param(config, 'bands')
+        #Fuge to always add the extra unexplained values
+        bands.append('EXTRA')
+        net = xmlobjects.NetworkMode()
+        net.parseXML(self.mode)
+        net.set_network_band(bands)
+        return self.api('net/net-mode', net)
+
+    @post_api
+    def set_network_mode(self, config):
+        mode = self._get_param(config, 'mode')
+        net = xmlobjects.NetworkMode()
+        net.parseXML(self.mode)
+        net.set_network_mode(mode)
+        return self.api('net/net-mode', net)
+
 class Security(RouterObject):
     '''Security module'''
     @property
@@ -329,7 +398,10 @@ class Wan(RouterObject):
     def add_port_forward(self, config):
         settings = xmlobjects.VirtualServerCollection()
         settings.parseXML(self.port_forwards)
-        settings.add_service(config)
+        if not isinstance(config, list):
+            config = [config]
+        for cfg in config:
+            settings.add_service(cfg)
         return self.api('security/virtual-servers', settings)
     
     @post_api
@@ -340,8 +412,11 @@ class Wan(RouterObject):
     def remove_port_forward(self, config):
         settings = xmlobjects.VirtualServerCollection()
         settings.parseXML(self.port_forwards)
-        name = self._get_param(config, 'name')
-        settings.remove_service(name)
+        if not isinstance(config, list):
+            config = [config]
+        for cfg in config:
+            name = self._get_param(cfg, 'name')
+            settings.remove_service(name)
         return self.api('security/virtual-servers', settings)
 
     @property
@@ -400,6 +475,7 @@ class B525Router(object):
         self.monitoring = Monitoring(self)
         self.wan = Wan(self)
         self.security = Security(self)
+        self.net = Network(self)
 
     def login(self, username, password, keepalive=300):
         self.__last_login=datetime.now()-timedelta(seconds=keepalive)

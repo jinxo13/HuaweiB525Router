@@ -1,11 +1,9 @@
-import os
 import uuid
 import hashlib
 import hmac
 from binascii import hexlify
 import math
 import base64
-import Crypto
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey.RSA import construct
 

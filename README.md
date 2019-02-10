@@ -47,7 +47,7 @@ You can use the ```router.features``` function to determine what is supported fo
    #Returns various information from the router
    response = router.device.info
    response = router.device.signal
-   response = router.device.signal_strength #Additional custom API call
+   response = router.device.signal_strength #CUSTOM: Alternate signal strength determination
    response = router.device.circleled #not available on Optus B525
    response = router.device.status #Various device status values
 
@@ -68,6 +68,17 @@ You can use the ```router.features``` function to determine what is supported fo
 
    response = router.wan.port_forwards
 
+   response = router.net.mode #Current supported 2G/3G/4G mode and bands
+   response = router.net.modelist #Expanded list of supported bands, contains non-XML value lists
+   response = router.net.modelist2 #CUSTOM: Provides an XML format friendly expanded list
+
+   #Manage 2G/3G/4G options
+   response = router.net.set_network_mode({'mode': 'AUTO'})
+   response = router.net.set_network_mode({'mode': '2G'})
+   response = router.net.set_network_mode({'mode': '3G'})
+   response = router.net.set_network_mode({'mode': '4G'})
+   response = router.net.set_lte_band({'bands': ['B40', 'B28', 'B7', 'B1', 'B3', 'B8']})
+   response = router.net.set_network_band({'bands': ['W2100', 'GSM900', 'W850', 'GSM1800', 'GSM850', 'GSM1900', 'W1900', 'W900']})
 
    #Manage port forwarding
    response = router.wan.port_forwards
