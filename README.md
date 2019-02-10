@@ -8,7 +8,7 @@ Untested but this may also work (or be able to be leveraged) for:
 - B618s-22d
 - B715s-23c
 
-You can use the ```test_features``` function to determine what is supported for your router.
+You can use the ```router.features``` function to determine what is supported for your router.
 
 ## Features
 - The test_features function will provide information about what API calls are supported by the router
@@ -27,7 +27,7 @@ You can use the ```test_features``` function to determine what is supported for 
    router.login(username='admin', password='xxx')
 
    #Get a list of what API calls appear to be are supported (GET requests only)
-   response = router.test_features()
+   response = router.features
 
    #Get the router detailed information
    response = router.device.info
