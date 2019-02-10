@@ -1,4 +1,4 @@
-import xmlobjects
+import xmlobjects as xmlobjects
 
 class RouterError(Exception):
 

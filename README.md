@@ -1,84 +1,145 @@
 # Huawei B525 Router Python API
 Python2 code to interact with the underlying API for the Huawei B525 router (tested on model B525s-65a).
-This is bascially a proxy for the API calls with some additional features.
+This iimplements a proxy for the API calls with some additional features.
 The API responses are in XML.
+Any errors are also returned in XML.
 
 Untested but this may also work (or be able to be leveraged) for:
 - B618s-22d
 - B715s-23c
 
-You can use the ```testFeatures``` function to determine what is supported for your router.
+You can use the ```test_features``` function to determine what is supported for your router.
 
 ## Features
+- The test_features function will provide information about what API calls are supported by the router
 - SCRAM authentication model Huawei are using on some routers - based on the initial code from Marcin: https://github.com/mkorz/b618reboot
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
 - Additional custom API calls like getSignalStrength() - returns strength rating of 0 - 5
-- For Optus Australia users allows setting DNS and Port Forwarding which is either hidden or disabled in the Web UI
 - Support settings where the router requires an encrypted request
 
 ## Example usage
 ```python
-   from router import B525Router
-   import xmlobjects
+   import huawei_lte.router as lte
+   import huawei_lte.xmlobjects as xmlobjects
    
-   try:
+   #Connect to the router
+   router = lte.B525Router('192.168.8.1')
+   router.login(username='admin', password='xxx')
+
+   #Get a list of what API calls appear to be are supported (GET requests only)
+   response = router.test_features()
+
+   #Get the router detailed information
+   response = router.device.info
+
+   #Commands
+   response = router.device.do_reboot()
+   response = router.device.do_poweroff()
+
+   #Custom API calls
+   response = router.api('device/information') #GET call to http://<host>/api/device/information
+   response = router.api('device/control', {'Control': 1}) #Sends the XML request as below
+   response = router.api(url='device/control', data={'Control': 1}, encrypted=True) #Send an encrypted payload
+   #Send the raw XML
+   request = '<?xml version="1.0" encoding="UTF-8"?><request><Control>1</Control></request>'
+   response = router.api('device/control', request)
+
+   #Returns various information from the router
+   response = router.device.info
+   response = router.device.signal
+   response = router.device.signal_strength #Additional custom API call
+   response = router.device.circleled #not available on Optus B525
+   response = router.device.status #Various device status values
+
+   response = router.monitoring.traffic #Current traffic
+   response = router.monitoring.stats #Monthly statistics
+   response = router.monitoring.trafficalert #Monthly data alert settings
+   response = router.monitoring.notifications
+
+   response = router.security.timerule #Not available on Optus B525
+   response = router.security.bridgemode #Not available on Optus B525
+
+   response = route.user.last_login
+
+   response = router.lan.current_clients #Currently connected clients
+   response = router.lan.all_clients #All known clients
+   response = router.lan.settings
+   response = router.lan.static_hosts
+
+   response = router.wan.port_forwards
+
+
+   #Manage port forwarding
+   response = router.wan.port_forwards
+   response = router.wan.add_port_forward({
+      'name':'IPSEC1',
+      'startwanport':500,
+      'startlanport':500,
+      'localip': '192.168.8.11',
+      'protocol': 'UDP'})
+   response = router.wan.add_port_forward({
+      'name':'IPSEC2',
+      'startwanport':4500,
+      'startlanport':4500,
+      'localip': '192.168.8.11',
+      'protocol': 'UDP'})
+   response = router.wan.remove_port_forward({'name': 'IPSEC1'})
+   response = router.wan.clear_port_forwards()
+
+   #Manage LAN settings
+   response = router.lan.settings
+   response = router.lan.set_dns_auto() #DNS set automatically by router
+   response = router.lan.set_dns({'primary': '192.168.8.11', 'secondary': '192.168.8.1'})
+   response = router.lan.set_ipaddress({'ipaddress': '192.168.8.1', 'netmask': '255.255.255.0'}) #Sets the routers LAN IP Address
+   response = router.lan.set_dhcp({'startaddress':'192.168.8.100', 'endaddress': '192.168.8.200'})
+   response = router.lan.set_dhcp_off()
    
-      #Connect to the router
-      router = B525Router(router='192.168.8.1', username='admin', password='xxx')
+   #Manage static IP assignment
+   response = router.lan.add_static_host([
+      {'macaddress': '92:1b:46:9d:be:86', 'ipaddress': '192.168.8.100'},
+      {'macaddress': '92:1b:46:9d:be:87', 'ipaddress': '192.168.8.102'}
+      ])
+   response = router.lan.remove_static_host({'macaddress': '92:1b:46:9d:be:86'})
+   response = router.lan.clear_static_hosts()
 
-      #Get a list of what API calls appear to be are supported (GET requests only)
-      response = router.testFeatures()
+   #Manage MAC filtering
+   response = router.security.macfilter
+   #Set filtering to Deny mode
+   response = router.security.deny_macaddress(['92:1b:46:9d:be:86', '92:1b:46:9d:be:87'])
+   #Set filtering to Allow mode
+   response = router.security.allow_macaddress(['92:1b:46:9d:be:86', '92:1b:46:9d:be:87'])
+   response = router.security.set_macfilter_off()
 
-      #Get the router detailed information
-      response = router.device.getInfo() #Calls http://192.168.8.1/api/device/information
+   #Manage DDNS settings
+   response = router.wan.ddns
+   response = router.wan.add_ddns({
+      'username': 'bilbo.baggins@gmail.com',
+      'password': 'elevenses',
+      'domain': 'bilbo.ddns.net',
+      'provider': 'No-IP.com'
+   })
+   response = router.wan.remove_ddns({'domain': 'bilbo.ddns.net'})
+   #Change the DDNS password
+   response = router.wan.edit_ddns({
+      'username': 'bilbo.baggins@gmail.com',
+      'password': 'smaug_rules',
+      'domain': 'bilbo.ddns.net',
+      'provider': 'No-IP.com'
+   })
 
-      #Reboot
-      response = router.device.doReboot()
+   #Manage monitoring
+   response = router.monitoring.clear_stats()
+   response = router.monitoring.set_trafficalert({
+      'startday': 8, #Plan starts on the 8th of each month
+      'datalimit': '500GB', #500GB Monthly data limit - can be specified in MB, GB
+      'threshold': 90 #Alert at 90% of usage
+      })
 
-      #Configure MAC filtering to blacklist MAC addresses
-      response = router.security.setDenyMacFilter(['XX:XX:XX:XX:XX:XX', 'YY:YY:YY:YY:YY:YY'])
-
-      #Make a custom GET API call
-      response = router.api('api/device/information')
-
-      #Make a custom POST API call, does a reboot
-      request = '<?xml version="1.0" encoding="UTF-8"?><request><Control>1</Control></request>'
-      response = router.api('api/device/control', request)
-
-      #Set up port forwarding to an IPSEC VPN server
-      config = xmlobjects.VirtualServers()
-      config.addUdpService(name='IPSEC1',wanPort=500,lanPort=500,localIp='192.168.8.11')
-      config.addUdpService(name='IPSEC2',wanPort=4500,lanPort=4500,localIp='192.168.8.11')
-      response = router.wan.setVirtualServer(config)
-
-      #Configure some LAN settings
-      config = xmlobjects.LanSettings()
-      config.setDnsManual('192.168.8.11','192.168.8.1')
-      config.setLanAddress('192.168.8.1','255.255.255.0','homerouter.cpe')
-      config.setDhcpOn('192.168.8.100','192.168.8.200',86400)
-      response = router.lan.setAllLanSettings(config)
-
-      #Setup some static hosts
-      config = xmlobjects.StaticHosts()
-      config.addHost('e7:4e:08:31:61:ba','192.168.8.11')
-      config.addHost('b8:29:eb:dd:0d:c1','192.168.8.10')
-      config.addHost('f0:03:8f:b3:1c:9a','192.168.8.12')
-      response = router.lan.setStaticHosts(config)
-
-      #Setup DDNS
-      config = xmlobjects.DdnsCollection()
-      config.addNoIpDdns('bilbo.baggins@gmail.com','elevenses','bilbo.ddns.net')
-      logging.warn(config.buildXML())
-      response = router.wan.addDdns(config)
-
-      #Logout
-      response = router.logout()
-   except (RouterError, err):
-      #Likely a login or session issue
-      print('An unexpected error occurred: Code: %s, Message: %s' % (err.code, err.message))
+   #Logout
+   response = router.logout()
 ```
 
-Here's an example reponse (for ```getInfo()```):
+Here's an example reponse (for ```router.device.info```):
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <response>
@@ -105,56 +166,7 @@ Here's an example reponse (for ```getInfo()```):
 </response>
 ```
 
-## Supported Calls
-Direct GET and POST API calls can be made as well, as shown in the Example Usage above.
-```
-GET Requests
-----------
-device.getInfo()           => api/device/information
-device.getSignal()         => api/device/signal
-device.getBridgeMode()     => api/security/bridgemode (Not supported on B525)
-device.getCircleLed()      => api/led/circle-switch (Not supported on B525)
-device.getSignalStrength() => Custom - returns signal strength between 0 and 5 based on rsrp value
-
-monitoring.getTraffic()    => api/monitoring/traffic-statistics
-monitoring.getStats()      => api/monitoring/month_statistics")
-
-lan.getClients()           => api/wlan/host-list
-lan.getAllClients()        => api/lan/HostInfo
-lan.getLanSettings()       => api/dhcp/settings
-lan.getStaticHosts()       => api/dhcp/static-addr-info
-
-security.getTimeRule()     => api/timerule/timerule (Not supported on B525)
-security.getMacFilter()    => api/security/mac-filter
-
-wan.getVirtualServers()    => api/security/virtual-servers
-
-POST Requests
--------------
-logout()
-
-device.doReboot()
-device.doPowerOff()
-
-security.setDenyMacFilter(macs)
-security.setAllowMacFilter(macs)
-security.setMacFilterOff()
-
-lan.setDhcpOff()
-lan.setDhcpOn(startAddress, endAddress, leaseTime=86400)
-lan.setLanAddress(ipaddress, netmask='255.255.255.0', url='homerouter.cpe')
-lan.setManualDns(primaryDns, secondaryDns='')
-lan.setAutomaticDns()
-lan.setAllLanSettings(settings)
-lan.setStaticHosts(settings)
-
-montitoring.clearTrafficStats()
-
-wan.setVirtualServers(servers)
-wan.clearVirtualServers()
-```
-
-## Results of testFeatures() for B525-65a
+## Results of ```router.features``` for B525-65a
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <response>
