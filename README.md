@@ -2,7 +2,7 @@
 Python2 code to interact with the underlying API for the Huawei B525 router (tested on model B525s-65a).
 This iimplements a proxy for the API calls with some additional features.
 The API responses are in XML.
-Any errors are also returned in XML.
+Any errors in the API calls are also returned in XML.
 
 Untested but this may also work (or be able to be leveraged) for:
 - B618s-22d
@@ -21,10 +21,12 @@ You can use the ```router.features``` function to determine what is supported fo
 ```python
    import huawei_lte.router as lte
    import huawei_lte.xmlobjects as xmlobjects
+   from huawei_lte.errors import RouterError
    
    #Connect to the router
    router = lte.B525Router('192.168.8.1')
-   router.login(username='admin', password='xxx')
+   router.login(username='admin', password='xxx') #Throws RouterError on a login error
+
 
    #Get a list of what API calls appear to be are supported (GET requests only)
    response = router.features
@@ -61,7 +63,7 @@ You can use the ```router.features``` function to determine what is supported fo
 
    response = route.user.last_login
 
-   response = router.lan.current_clients #Currently connected clients
+   response = router.lan.clients #Currently connected clients
    response = router.lan.all_clients #All known clients
    response = router.lan.settings
    response = router.lan.static_hosts
@@ -147,7 +149,7 @@ You can use the ```router.features``` function to determine what is supported fo
       })
 
    #Logout
-   response = router.logout()
+   response = router.logout() #Throws RouterError on a logout error
 ```
 
 Here's an example reponse (for ```router.device.info```):

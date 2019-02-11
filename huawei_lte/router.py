@@ -6,12 +6,15 @@ from xml.sax.saxutils import escape
 import requests
 import logging
 from datetime import datetime, timedelta
+import threading
 
 #Local imports
 import huawei_lte.xmlobjects as xmlobjects
 import huawei_lte.utils as utils
 from huawei_lte.errors import RouterError
 import huawei_lte.crypto as crypto
+
+logger = logging.getLogger(__name__)
 
 #Dictionary to hold all GET APIS, used by testFeatures function
 GET_APIS = {}
@@ -29,7 +32,7 @@ def get_api(api):
             except ValueError as err:
                 return xmlobjects.Error.xml_error(f.__name__, escape(err.message))
             except:
-                logging.exception('message')
+                logger.exception('message')
                 msg = 'Unexpected error: %s' % sys.exc_info()[0]
                 return xmlobjects.Error.xml_error(f.__name__, escape(msg))
         return decorated_function
@@ -43,7 +46,7 @@ def post_api(f):
         except ValueError as err:
             return xmlobjects.Error.xml_error(f.__name__, escape(err.message))
         except:
-            logging.exception('message')
+            logger.exception('message')
             msg = 'Unexpected error: %s' % sys.exc_info()[0]
             return xmlobjects.Error.xml_error(f.__name__, escape(msg))
     return decorated_function
@@ -72,7 +75,7 @@ class Lan(RouterObject):
 
     @property
     @get_api(api='wlan/host-list')
-    def current_clients(self): pass
+    def clients(self): pass
 
     @property
     @get_api(api='lan/HostInfo')
@@ -468,6 +471,7 @@ class B525Router(object):
         self.__rsae = None
         self.__rsan = None
         self.__is_logged_in = False
+        self.__lock = threading.Lock()
 
         self.device = Device(self)
         self.lan = Lan(self)
@@ -478,11 +482,12 @@ class B525Router(object):
         self.net = Network(self)
 
     def login(self, username, password, keepalive=300):
-        self.__last_login=datetime.now()-timedelta(seconds=keepalive)
-        self.username = username
-        self.__password = password
-        self.__timeout = keepalive
-        self.__login()
+        with self.__lock:
+            self.__last_login=datetime.now()-timedelta(seconds=keepalive)
+            self.username = username
+            self.__password = password
+            self.__timeout = keepalive
+            return self.__login()
 
     def __setup_session(self):
         """ gets the url from the server ignoring the response, just to get session cookie set up """
@@ -522,6 +527,7 @@ class B525Router(object):
 
     def __login(self):
         """ logs in to the router using SCRAM method of authentication """
+        logger.info('LOGIN for user [%s]' % self.username)
         response = self.__api_challenge()
         verification_token = response.headers[self.REQUEST_TOKEN]
         scram_data = ET.fromstring(response.text)
@@ -553,42 +559,43 @@ class B525Router(object):
         self.__rsae = xml.find('.//rsae').text
         self.__rsan = xml.find('.//rsan').text
         self.__is_logged_in = True
-        return verification_token
 
     def enc_api(self, url, data):
         return self.api(url=url, data=data, encrypted=True)
 
     def __post(self, url, data, headers):
-        logging.debug('------------ REQUEST to %s -------------', url)
-        logging.debug('-- HEADERS --')
-        logging.debug('%s', headers)
-        logging.debug('-------------')
-        logging.debug('-- DATA --')
-        logging.debug('%s', data)
-        logging.debug('-------------')
+        logger.debug('------------ REQUEST to %s -------------', url)
+        logger.debug('-- HEADERS --')
+        logger.debug('%s', headers)
+        logger.debug('-------------')
+        logger.debug('-- DATA --')
+        logger.debug('%s', data)
+        logger.debug('-------------')
         result = self.client.post(url, data=data, headers=headers)
-        logging.debug('------------ RESPONSE to %s -------------', url)
-        logging.debug('-- HEADERS --')
-        logging.debug('%s', result.headers)
-        logging.debug('-------------')
-        logging.debug('-- DATA --')
-        logging.debug('%s', result.text)
-        logging.debug('-------------')
+        logger.info('POST %s %i' % (url, result.status_code))
+        logger.debug('------------ RESPONSE to %s -------------', url)
+        logger.debug('-- HEADERS --')
+        logger.debug('%s', result.headers)
+        logger.debug('-------------')
+        logger.debug('-- DATA --')
+        logger.debug('%s', result.text)
+        logger.debug('-------------')
         return result
 
     def __get(self, url, headers=None):
-        logging.debug('------------ REQUEST to %s -------------', url)
-        logging.debug('-- HEADERS --')
-        logging.debug('%s', headers)
-        logging.debug('-------------')
+        logger.debug('------------ REQUEST to %s -------------', url)
+        logger.debug('-- HEADERS --')
+        logger.debug('%s', headers)
+        logger.debug('-------------')
         result = self.client.get(url, headers=headers)
-        logging.debug('------------ RESPONSE to %s -------------', url)
-        logging.debug('-- HEADERS --')
-        logging.debug('%s', result.headers)
-        logging.debug('-------------')
-        logging.debug('-- DATA --')
-        logging.debug('%s', result.text)
-        logging.debug('-------------')
+        logger.info('GET %s %i' % (url, result.status_code))
+        logger.debug('------------ RESPONSE to %s -------------', url)
+        logger.debug('-- HEADERS --')
+        logger.debug('%s', result.headers)
+        logger.debug('-------------')
+        logger.debug('-- DATA --')
+        logger.debug('%s', result.text)
+        logger.debug('-------------')
         return result
         
     @post_api
@@ -597,8 +604,10 @@ class B525Router(object):
         #Check if the session has timed out, and login again if it has
         timed_out = datetime.now() - self.__last_login
         if (timed_out.total_seconds() >= self.__timeout and self.__is_logged_in):
-            logging.debug('Sessoin timeout - establishing new login...')
-            self.__login()
+            with self.__lock:
+                if (timed_out.total_seconds() >= self.__timeout and self.__is_logged_in):
+                    logger.debug('Session timeout - establishing new login...')
+                    self.__login()
         verification_token = self.__get_server_token()[32:]
 
         if isinstance(data, dict):
@@ -658,11 +667,12 @@ class B525Router(object):
             
         return result.buildXmlResponse()
 
+    @post_api
     def logout(self):
         '''Logout user'''
-        response = self.api('user/logout', {'Logout': 1})
-        self.__is_logged_in = False
-        if not self.client is None:
-            self.client.close()
-            self.client = None
-        return response
+        with self.__lock:
+            logger.info('LOGOUT for user [%s]', self.username)
+            response = self.api('user/logout', {'Logout': 1})
+            if RouterError.hasError(response):
+                raise RouterError(response)
+            self.__is_logged_in = False
