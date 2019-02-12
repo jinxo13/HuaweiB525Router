@@ -5,7 +5,7 @@ class RouterError(Exception):
     __ERRORS = [
         [2000, 'Python API: %s - %s'],
         [100001, 'An unkown error occurred'],
-        [100002, 'The router does not support this function'],
+        [100002, 'No such URL. The router does not support this function'],
         [100003, 'You have no rights to access this function'],
         [100004, 'The system is busy'],
         [100005, 'Format error'], #TODO: This is not very discriptive, XML format?

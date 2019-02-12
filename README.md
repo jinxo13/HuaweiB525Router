@@ -12,10 +12,15 @@ You can use the ```router.features``` function to determine what is supported fo
 
 ## Features
 - The test_features function will provide information about what API calls are supported by the router
-- SCRAM authentication model Huawei are using on some routers - based on the initial code from Marcin: https://github.com/mkorz/b618reboot
+- SCRAM authentication model Huawei are using on some routers
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
 - Additional custom API calls like ```router.device.signal_strength``` - returns strength rating of 0 - 5
 - Support settings where the router requires an encrypted request
+
+## References
+- SCRAM authentication code based on the initial code from Marcin: https://github.com/mkorz/b618reboot
+- Aproach to investigating the API - https://www.mrt-prodz.com/blog/view/2015/05/huawei-modem-api-and-data-plan-monitor
+- API Error codes - https://github.com/HSPDev/Huawei-E5180-API
 
 ## Example usage
 ```python
@@ -149,7 +154,7 @@ You can use the ```router.features``` function to determine what is supported fo
       })
 
    #Logout
-   response = router.logout() #Throws RouterError on a logout error
+   router.logout() #Throws RouterError on a logout error
 ```
 
 Here's an example reponse (for ```router.device.info```):
