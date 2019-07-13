@@ -387,10 +387,12 @@ class LanSettings(XmlObject):
     
     def setLanAddress(self, config):
         ipaddress = self._get_param(config, 'ipaddress')
-        self.netmask =  self._get_param(config, 'ipaddress', '255.255.255.0')
+        netmask = self._get_param(config, 'netmask', '255.255.255.0')
         url = self._get_param(config, 'url', 'homerouter.cpe')
         if (not utils.isIpValid(ipaddress)): raise ValueError("Invalid LAN IP Address: %s" % ipaddress)
-        self.DhcpIPAddress = ipaddress
+        if (not utils.isIpValid(netmask)): raise ValueError("Invalid LAN Netmask: %s" % netmask)
+        self.DhcpIPAddress = ipaddres
+        self.DhcpLanNetmask = netmask
         self.homeurl = url
 
     def setDhcpOn(self, config):
