@@ -11,7 +11,7 @@ Untested but this may also work (or be able to be leveraged) for:
 You can use the ```router.features``` function to determine what is supported for your router.
 
 ## Features
-- The test_features function will provide information about what API calls are supported by the router
+- The ```features``` function will provide information about what API calls are supported by the router
 - SCRAM authentication model Huawei are using on some routers
 - Injected error messages in router API responses when missing (refer to errors.py for the list)
 - Additional custom API calls like ```router.device.signal_strength``` - returns strength rating of 0 - 5
