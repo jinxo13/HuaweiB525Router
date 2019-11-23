@@ -3,8 +3,8 @@ import re
 from setuptools import find_packages, setup
 
 
-READMEFILE = "README.rst"
-VERSIONFILE = os.path.join("elasticutils", "_version.py")
+READMEFILE = "README.md"
+VERSIONFILE = os.path.join("huawei_lte", "_version.py")
 VSRE = r"^__version__ = ['\"]([^'\"]*)['\"]"
 
 
