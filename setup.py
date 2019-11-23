@@ -28,7 +28,7 @@ setup(
     license='BSD',
     packages=find_packages(),
     install_requires=[
-        'huaweilte>=1.0'
+        'huawei_lte>=1.0.0'
     ],
     include_package_data=True,
     classifiers=[
