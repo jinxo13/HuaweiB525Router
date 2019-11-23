@@ -19,7 +19,7 @@ def get_version():
 
 
 setup(
-    name='huaweilte',
+    name='huawei_lte',
     version=get_version(),
     description='Huawei LTE API',
     long_description=open(READMEFILE).read(),
