@@ -28,7 +28,8 @@ setup(
     license='BSD',
     packages=find_packages(),
     install_requires=[
-        'huawei_lte>=1.0.0'
+        'huawei_lte>=1.0.0',
+        'pycrypto>=2.6.1'
     ],
     include_package_data=True,
     classifiers=[
