@@ -17,12 +17,13 @@ import huawei_lte.crypto as crypto
 logger = logging.getLogger(__name__)
 
 #Dictionary to hold all GET APIS, used by testFeatures function
-GET_APIS = {}
+GET_APIS = []
+
 #Decorator for GET API functions, populates the GET_APIS dictionary
-def get_api(api):
+def get_api(cls, api):
     '''Designate function as a GET API call'''
     def api_decorator(f):
-        GET_APIS[f.__name__] = api
+        GET_APIS.append([cls, f.__name__, api])
         def decorated_function(*args):
             try:
                 inst = args[0]
@@ -65,20 +66,21 @@ class RouterObject(object):
 
 class Lan(RouterObject):
     '''LAN module'''
+
     @property
-    @get_api(api='dhcp/settings')
+    @get_api(cls='Lan', api='dhcp/settings')
     def settings(self): pass
 
     @property
-    @get_api(api='dhcp/static-addr-info')
+    @get_api(cls='Lan', api='dhcp/static-addr-info')
     def static_hosts(self): pass
 
     @property
-    @get_api(api='wlan/host-list')
+    @get_api(cls='Lan', api='wlan/host-list')
     def clients(self): pass
 
     @property
-    @get_api(api='lan/HostInfo')
+    @get_api(cls='Lan', api='lan/HostInfo')
     def all_clients(self): pass
 
     @post_api
@@ -182,29 +184,131 @@ class Lan(RouterObject):
 class User(RouterObject):
     '''User module'''
     @property
-    @get_api(api='user/history-login')
+    @get_api(cls='User', api='user/history-login')
     def last_login(self): pass
+
+class Ethernet(RouterObject):
+
+    CONNECTION_STATUS = {
+        900: 'Connecting',
+        901: 'Connected',
+        902: 'Disconnected',
+        903: 'Disconnecting',
+        904: 'Connection Failed',
+        905: 'Connection status null',
+        906: 'Connection stats error'
+    }
+
+    CONNECTION_MODE = {
+        0: 'AUTO',
+        1: 'PPPOE + Dynamic',
+        2: 'PPPOE',
+        3: 'Dynamic',
+        4: 'Static',
+        5: 'Lan Only'
+    }
+
+    @property
+    @get_api(cls='Ethernet', api='cradle/basic-info')
+    def settings(self): pass
+
+    @property
+    @get_api(cls='Ethernet', api='cradle/status-info')
+    def status(self): pass
+
+    @property
+    def connection(self):
+        '''
+        Returns current connection mode and state
+        e.g.
+        <ConnectionStatus>Connected</ConnectionStatus>
+        <ConnectionMode>AUTO</ConnectionMode>
+        '''
+        state = xmlobjects.CustomXml({'connectionmode': 0, 'connectstatus': 0})
+        state.parseXML(self.status)
+
+        connection_mode = self.CONNECTION_MODE[int(state.connectionmode)]
+        connection_status = 'Unknown'
+        if int(state.connectstatus) in self.CONNECTION_STATUS.keys():
+            connection_status = self.CONNECTION_STATUS[int(state.connectstatus)]
+        xml = xmlobjects.CustomXml({
+            'ConnectionStatus': connection_status,
+            'ConnectionMode': connection_mode
+        })
+        return xml.buildXmlResponse()
+
+    def __set_mode(self, mode, config=False, encrypt=False):
+        conn_mode = xmlobjects.ConnectionMode()
+        conn_mode.parseXML(self.settings)
+        #Blank password
+        conn_mode.pppoepwd = ''
+        conn_mode.set(mode, config)
+        if not encrypt:
+            return self.api('cradle/basic-info', conn_mode)
+        else:
+            return self.enc_api('cradle/basic-info', conn_mode)
+
+    @post_api
+    def set_auto(self, config=False):
+        '''
+        The system chooses the best connection mode automatically
+        PPPOE and Dynamic IP settings can be specified
+        '''
+        return self.__set_mode(xmlobjects.ConnectionMode.MODE_AUTO, config)
+
+    @post_api
+    def set_lan_only(self):
+        '''The system uses a 3G or 4G network to connect to the network'''
+        return self.__set_mode(xmlobjects.ConnectionMode.MODE_LAN)
+
+    @post_api
+    def set_ppoe(self, config):
+        '''
+        The system uses the user name and password provided by your ISP to connect to the network
+        {'username': 'fred', 'password': 'secret', 'auth': 0|1|2} (AUTO|PAP|CHAP)
+        '''
+        return self.__set_mode(xmlobjects.ConnectionMode.MODE_PPPOE, config, encrypt=True)
+
+    @post_api
+    def set_dynamic(self, config):
+        '''
+        The system obtains an IP address automatically
+        {'primarydns': '8.8.8.8', 'secondarydns': '8.8.4.4'}
+        {'dnsmanual': 0}
+        {'mtu': 1480}
+        '''
+        return self.__set_mode(xmlobjects.ConnectionMode.MODE_DYNAMIC, config)
+
+    @post_api
+    def set_ppoe_dynamic(self, config):
+        '''The system can connect to the network in two ways: using the user name and password provided by your ISP or obtaining an IP address automatically'''
+        return self.__set_mode(xmlobjects.ConnectionMode.MODE_PPPOE_DYNAMIC, config, encrypt=True)
+
+    @post_api
+    def set_static(self, config):
+        '''The system uses the IP address specified by your ISP to connect to the network'''
+        return self.__set_mode(xmlobjects.ConnectionMode.MODE_STATIC, config)
 
 class Device(RouterObject):
     '''Device module'''
     @property
-    @get_api(api='device/information')
+    @get_api(cls='Device', api='device/information')
     def info(self): pass
 
     @property
-    @get_api(api='device/signal')
+    @get_api(cls='Device', api='device/signal')
     def signal(self): pass
 
     @property
-    @get_api(api='monitoring/status')
+    @get_api(cls='Device', api='monitoring/status')
     def status(self): pass
 
     @property
-    @get_api(api='led/circle-switch')
+    @get_api(cls='Device', api='led/circle-switch')
     def circleled(self): pass
 
     @property
-    @get_api(api='security/bridgemode')
+    @get_api(cls='Device', api='security/bridgemode')
     def bridgemode(self): pass #Returns Not supported error on B525
 
     @property
@@ -235,12 +339,12 @@ class Device(RouterObject):
 class Network(RouterObject):
     '''Network module'''
     @property
-    @get_api(api='net/net-mode')
+    @get_api(cls='Network', api='net/net-mode')
     def mode(self):
         pass
 
     @property
-    @get_api(api='net/net-mode-list')
+    @get_api(cls='Network', api='net/net-mode-list')
     def modelist(self):
         pass
 
@@ -300,11 +404,11 @@ class Network(RouterObject):
 class Security(RouterObject):
     '''Security module'''
     @property
-    @get_api(api='security/mac-filter')
+    @get_api(cls='Security', api='security/mac-filter')
     def macfilter(self):
         pass
 
-    @get_api(api='timerule/timerule')
+    @get_api(cls='Security', api='timerule/timerule')
     def timerule(self):
         pass
 
@@ -340,22 +444,22 @@ class Security(RouterObject):
 class Monitoring(RouterObject):
     '''Monitoring module'''
     @property
-    @get_api(api='monitoring/traffic-statistics')
+    @get_api(cls='Monitoring', api='monitoring/traffic-statistics')
     def traffic(self):
         pass
 
     @property
-    @get_api(api='monitoring/month_statistics')
+    @get_api(cls='Monitoring', api='monitoring/month_statistics')
     def stats(self):
         pass
 
     @property
-    @get_api(api='monitoring/check-notifications')
+    @get_api(cls='Monitoring', api='monitoring/check-notifications')
     def notifications(self):
         pass
 
     @property
-    @get_api(api='monitoring/start_date')
+    @get_api(cls='Monitoring', api='monitoring/start_date')
     def trafficalert(self):
         pass
 
@@ -394,7 +498,7 @@ class Monitoring(RouterObject):
 class Wan(RouterObject):
     '''WAN module'''
     @property
-    @get_api(api='security/virtual-servers')
+    @get_api(cls='Wan', api='security/virtual-servers')
     def port_forwards(self): pass
 
     @post_api
@@ -423,7 +527,7 @@ class Wan(RouterObject):
         return self.api('security/virtual-servers', settings)
 
     @property
-    @get_api(api='ddns/ddns-list')
+    @get_api(cls='Wan', api='ddns/ddns-list')
     def ddns(self): pass
 
     @post_api
@@ -480,6 +584,7 @@ class B525Router(object):
         self.wan = Wan(self)
         self.security = Security(self)
         self.net = Network(self)
+        self.ethernet = Ethernet(self)
 
     def login(self, username, password, keepalive=300):
         with self.__lock:
@@ -652,12 +757,14 @@ class B525Router(object):
                 objs.append(value)
 
         #Iterate through get_api calls
-        for f in GET_APIS:
-            api = GET_APIS[f]
+        for val in GET_APIS:
+            cls = val[0]
+            f = val[1]
+            api = val[2]
             func = None
             #find function
             for ob in objs:
-                if hasattr(ob,f):
+                if ob.__class__.__name__ == cls and hasattr(ob,f):
                     if isinstance(getattr(type(ob), f, None), property):
                         prop = getattr(type(ob), f, None)
                         result.addFunction(ob, f, api, prop.__get__(ob, type(ob)))

@@ -153,6 +153,32 @@ You can use the ```router.features``` function to determine what is supported fo
       'threshold': 90 #Alert at 90% of usage
       })
 
+   #Change Ethernet settings
+   response = router.ethernet.status #current ethernet connection status
+   response = router.ethernet.connection #Friendly mode and connection state information
+   response = router.ethernet.settings #Current ethernet settings
+
+   #Automatically select the best ethernet mode (recommended default)
+   response = router.ethernet.set_auto()
+   #You can set all the settings below (apart from the static info)
+   response = router.ethernet.set_auto({'username': 'fred', 'password': 'secret', 'authmode': 0})
+
+   #LTE mode - so uses 3G or 4G
+   response = router.ethernet.set_lan_only()
+   
+   #Connect with PPPOE 0=AUTO, 1=PAP, 2=CHAP
+   response = router.ethernet.set_pppoe({'username': 'fred', 'password': 'secret', 'authmode': 0})
+   
+   #An IP address is provided automatically
+   response = router.ethernet.set_dynamic() 
+   #Get an assinged IP Address but override the provided DNS settings
+   response = router.ethernet.set_dynamic({'primarydns': '8.8.8.8', 'secondarydns':'8.8.4.4'})
+   #Use either PPOE or an assigned IP Address
+   response = router.ethernet.set_ppoe_dynamic() 
+   
+   #Use a static IP Address
+   response = router.ethernet.set_static({'ipaddress': '192.168.1.3', 'netmask': '255.255.255.0', 'gateway': '192.168.1.1', 'primarydns': '8.8.8.8', 'secondarydns': '8.8.4.4'})
+
    #Logout
    router.logout() #Throws RouterError on a logout error
 ```
@@ -193,7 +219,7 @@ Here's an example reponse (for ```router.device.info```):
    <HardwareVersion>WL2B520M</HardwareVersion>
    <SoftwareVersion>11.189.63.00.74</SoftwareVersion>
    <WebUIVersion>21.100.44.00.03</WebUIVersion>
-   <MacAddress1>XX:XX:XX:XX:XX:XX</MacAddress1>
+   <MacAddress1>D0:16:B4:F2:30:92</MacAddress1>
    <MacAddress2 />
    <Failed>
       <Function>
@@ -202,37 +228,17 @@ Here's an example reponse (for ```router.device.info```):
          <Error>100006: Parameter error</Error>
       </Function>
       <Function>
+         <Name>device.bridgemode</Name>
+         <Url>api/security/bridgemode</Url>
+         <Error>100002: No such URL. The router does not support this function</Error>
+      </Function>
+      <Function>
          <Name>security.timerule</Name>
          <Url>api/timerule/timerule</Url>
          <Error>100006: Parameter error</Error>
       </Function>
-      <Function>
-         <Name>device.bridgemode</Name>
-         <Url>api/security/bridgemode</Url>
-         <Error>100002: The router does not support this function</Error>
-      </Function>
    </Failed>
    <Passed>
-      <Function>
-         <Name>device.info</Name>
-         <Url>api/device/information</Url>
-      </Function>
-      <Function>
-         <Name>lan.current_clients</Name>
-         <Url>api/wlan/host-list</Url>
-      </Function>
-      <Function>
-         <Name>monitoring.trafficalert</Name>
-         <Url>api/monitoring/start_date</Url>
-      </Function>
-      <Function>
-         <Name>monitoring.stats</Name>
-         <Url>api/monitoring/month_statistics</Url>
-      </Function>
-      <Function>
-         <Name>security.macfilter</Name>
-         <Url>api/security/mac-filter</Url>
-      </Function>
       <Function>
          <Name>lan.settings</Name>
          <Url>api/dhcp/settings</Url>
@@ -242,37 +248,73 @@ Here's an example reponse (for ```router.device.info```):
          <Url>api/dhcp/static-addr-info</Url>
       </Function>
       <Function>
-         <Name>lan.all_clients</Name>
-         <Url>api/lan/HostInfo</Url>
+         <Name>lan.clients</Name>
+         <Url>api/wlan/host-list</Url>
       </Function>
       <Function>
-         <Name>device.status</Name>
-         <Url>api/monitoring/status</Url>
+         <Name>lan.all_clients</Name>
+         <Url>api/lan/HostInfo</Url>
       </Function>
       <Function>
          <Name>user.last_login</Name>
          <Url>api/user/history-login</Url>
       </Function>
       <Function>
-         <Name>wan.ddns</Name>
-         <Url>api/ddns/ddns-list</Url>
+         <Name>ethernet.settings</Name>
+         <Url>api/cradle/basic-info</Url>
       </Function>
       <Function>
-         <Name>monitoring.traffic</Name>
-         <Url>api/monitoring/traffic-statistics</Url>
+         <Name>ethernet.status</Name>
+         <Url>api/cradle/status-info</Url>
       </Function>
       <Function>
-         <Name>wan.port_forwards</Name>
-         <Url>api/security/virtual-servers</Url>
+         <Name>device.info</Name>
+         <Url>api/device/information</Url>
       </Function>
       <Function>
          <Name>device.signal</Name>
          <Url>api/device/signal</Url>
       </Function>
       <Function>
+         <Name>device.status</Name>
+         <Url>api/monitoring/status</Url>
+      </Function>
+      <Function>
+         <Name>network.mode</Name>
+         <Url>api/net/net-mode</Url>
+      </Function>
+      <Function>
+         <Name>network.modelist</Name>
+         <Url>api/net/net-mode-list</Url>
+      </Function>
+      <Function>
+         <Name>security.macfilter</Name>
+         <Url>api/security/mac-filter</Url>
+      </Function>
+      <Function>
+         <Name>monitoring.traffic</Name>
+         <Url>api/monitoring/traffic-statistics</Url>
+      </Function>
+      <Function>
+         <Name>monitoring.stats</Name>
+         <Url>api/monitoring/month_statistics</Url>
+      </Function>
+      <Function>
          <Name>monitoring.notifications</Name>
          <Url>api/monitoring/check-notifications</Url>
       </Function>
+      <Function>
+         <Name>monitoring.trafficalert</Name>
+         <Url>api/monitoring/start_date</Url>
+      </Function>
+      <Function>
+         <Name>wan.port_forwards</Name>
+         <Url>api/security/virtual-servers</Url>
+      </Function>
+      <Function>
+         <Name>wan.ddns</Name>
+         <Url>api/ddns/ddns-list</Url>
+      </Function>
    </Passed>
-</response
+</response>
 ```

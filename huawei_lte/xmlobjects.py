@@ -573,3 +573,136 @@ class DdnsCollection(XmlObject):
 
     def setToEdit(self):
         self.operate = self.OPERATE_EDIT
+
+class ConnectionMode(XmlObject):
+    MODE_AUTO = 0
+    MODE_PPPOE_DYNAMIC = 1
+    MODE_PPPOE = 2
+    MODE_DYNAMIC = 3
+    MODE_STATIC = 4
+    MODE_LAN = 5
+
+    #Best guess, PPOE authentication
+    AUTH_AUTO = 0
+    AUTH_PAP = 1
+    AUTH_CHAP = 2
+
+    NO_DNS = '0.0.0.0'
+
+    def __init__(self):
+        super(ConnectionMode, self).__init__()
+        self.connectionmode = self.MODE_AUTO
+        self.pppoemtu = 1480
+        self.dynamicipmtu = 1500
+        self.maxidletime = 600
+        self.dynamicsetdnsmanual = 0
+        self.dynamicprimarydns = self.NO_DNS
+        self.dynamicsecondarydns = self.NO_DNS
+        self.primarydns = self.NO_DNS
+        self.secondarydns = self.NO_DNS
+        self.netmask = ''
+        self.ipaddress = ''
+        self.gateway = ''
+        self.pppoeuser = ''
+        self.pppoepwd = ''
+        self.pppoeauth = self.AUTH_PAP
+
+    def set(self, mode, config=False):
+        self.connectionmode = mode
+        if not config:
+            if mode == self.MODE_AUTO or mode == self.MODE_LAN: return
+            else: config = {}
+
+        #Set values only if they exist in the supplied config
+
+        if mode == self.MODE_DYNAMIC or mode == self.MODE_PPPOE_DYNAMIC or mode == self.MODE_AUTO:
+            if 'primarydns' in config:
+                dns = self._get_param(config, 'primarydns')
+                if dns == '': dns = self.NO_DNS
+                if (dns != self.NO_DNS):
+                    if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Dynamic Primary DNS: %s" % dns)
+                self.dynamicprimarydns = dns
+                if dns != self.NO_DNS:
+                    self.dynamicsetdnsmanual = 1
+                else:
+                    self.dynamicsetdnsmanual = 0
+
+            if 'secondarydns' in config:
+                dns = self._get_param(config, 'secondarydns')
+                if dns == '': dns = self.NO_DNS
+                if (dns != self.NO_DNS):
+                    if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Dynamic Secondary DNS: %s" % dns)
+                self.dynamicsecondarydns = dns
+                if dns != self.NO_DNS: self.dynamicsetdnsmanual = 1
+
+            if 'dnsmanual' in config:
+                dns = self._get_param(config, 'dnsmanual')
+                if dns not in [0,1]: raise ValueError("dnsmanual must be 1 or 0: %s" % dns)
+                if self.dynamicprimarydns == self.NO_DNS: raise ValueError("Manual DNS specified, Primary DNS must be set")
+                self.dynamicsetdnsmanual = dns
+
+            if 'mtu' in config:
+                self.dynamicipmtu = self._get_param(config, 'mtu')
+
+        if mode == self.MODE_PPPOE or mode == self.MODE_PPPOE_DYNAMIC or mode == self.MODE_AUTO:
+            if 'password' in config:
+                val = self._get_param(config, 'password')
+                if len(val) > 63: raise ValueError('PPPOE password can contain a maximum of 63 characters, including letters, numbers, and symbols (ASCII characters 32-126).')
+                self.pppoepwd = val
+            elif mode != self.MODE_AUTO and self.pppoepwd == '':
+                raise ValueError('PPOE password must be provided')
+
+            if 'username' in config:
+                val = self._get_param(config, 'username')
+                if len(val) > 63: raise ValueError('PPPOE user can contain a maximum of 63 characters, including letters, numbers, and symbols (ASCII characters 32-126).')
+                self.pppoeuser = val
+            elif mode != self.MODE_AUTO and self.username == '':
+                raise ValueError('PPOE username must be provided')
+
+            if 'authmode' in config:
+                mode = self._get_param(config, 'authmode')
+                if not mode in [self.AUTH_AUTO, self.AUTH_PAP, self.AUTH_CHAP]: raise ValueError('PPOE auth mode must be one of: 0 (AUTO), 1 (PAP), 2 (CHAP)')
+                self.pppoeauth = self._get_param(config, 'authmode')
+
+            if 'mtu' in config:
+                self.pppoemtu = self._get_param(config, 'mtu')
+
+        if mode == self.MODE_STATIC:
+
+            if 'ipaddress' in config:
+                ip = self._get_param(config, 'ipaddress')
+                if (not utils.isIpValid(ip)): raise ValueError("Invalid IP Address: %s" % ip)
+                self.ipaddress = ip
+                self.netmask = '255.255.255.0'
+            else:
+                raise ValueError('ipaddress must be provided')
+
+            if 'netmask' in config:
+                self.netmask = self._get_param(config, 'netmask')
+
+            if 'gateway' in config:
+                self.gateway = self._get_param(config, 'gateway')
+            else:
+                if self.gateway == '':
+                    raise ValueError('gateway must be provided')
+
+            if 'mtu' in config:
+                self.staticipmtu = self._get_param(config, 'mtu')
+
+            if 'primarydns' in config:
+                dns = self._get_param(config, 'primarydns')
+                if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Primary DNS: %s" % dns)
+                self.primarydns = dns
+
+            if 'secondarydns' in config:
+                dns = self._get_param(config, 'secondarydns')
+                if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Secondary DNS: %s" % dns)
+                self.secondarydns = dns
+
+        if 'maxidletime' in config:
+            self.maxidletime = self._get_param(config, 'maxidletime')
+
+        if 'dialmode' in config:
+            self.dialmode = self._get_param(config, 'dialmode')
+
+        #PPPOE
