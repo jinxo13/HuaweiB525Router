@@ -187,6 +187,85 @@ class User(RouterObject):
     @get_api(cls='User', api='user/history-login')
     def last_login(self): pass
 
+class Voip(RouterObject):
+    @property
+    @get_api(cls='Voip', api='voice/voicebusy')
+    def status(self): pass
+
+    @property
+    @get_api(cls='Voip', api='voice/voipadvance')
+    def voip_options(self):
+        '''
+        TODO: Untested
+        '''
+        pass
+
+    @property
+    @get_api(cls='Voip', api='voice/featureswitch')
+    def feature_switch(self): pass
+
+    @property
+    @get_api(cls='Voip', api='voice/sipaccount')
+    def sip_accounts(self): pass
+
+    @post_api
+    def remove_account(self, config):
+        '''
+        Remove a configured account by name, config -> { 'account': 'TPG' }
+        '''
+        account = self._get_param(config, 'account')
+        xml = ET.fromstring(self.sip_accounts)
+        ele = xml.findall('.//account[directorynumber="%s"]' % account)
+        if ele is None:
+            raise ValueError('Unable to find account: %s' % account)
+        index = ele[0].find('.//index').text
+        settings = xmlobjects.SipCollection()
+        settings.account.append(xmlobjects.CustomXml({'index': index}, 'account'))
+        return self.enc_api('voice/deletesipaccount', settings)
+
+    @post_api
+    def add_account(self, config):
+        '''
+        Add a new SIP account, config -> {'account': 'TPG', 'username': 'fred', 'password': 'xxxx'}
+        '''
+        settings = xmlobjects.SipCollection()
+        settings.addAccount(config)
+        return self.enc_api('voice/addipaccount', settings)
+
+    @property
+    @get_api(cls='Voip', api='voice/sipadvance')
+    def sip_options(self):
+        '''
+        Return current SIP options
+        '''
+        pass
+
+    @post_api
+    def set_sip_options(self, config):
+        '''
+        Set SIP options: config -> { 'callwaiting': 0|1 }
+        '''
+        settings = xmlobjects.SipOptions(config)
+        return self.api('voice/sipadvanced', settings)
+
+    @property
+    @get_api(cls='Voip', api='voice/sipserver')
+    def sipserver(self): pass
+
+    @post_api
+    def set_sip_server(self, config):
+        settings = xmlobjects.SipServer(config)
+        return self.api('voice/sipserver', settings)
+
+    @property
+    @get_api(cls='Voip', api='voice/voice-basic-settings')
+    def voice_settings(self): pass
+
+    @post_api
+    def set_voice_settings(self, config):
+        settings = xmlobjects.VoiceSettings(config)
+        return self.api('voice/voice-basic-settings', settings)
+
 class Ethernet(RouterObject):
 
     CONNECTION_STATUS = {
@@ -585,6 +664,7 @@ class B525Router(object):
         self.security = Security(self)
         self.net = Network(self)
         self.ethernet = Ethernet(self)
+        self.voip = Voip(self)
 
     def login(self, username, password, keepalive=300):
         with self.__lock:

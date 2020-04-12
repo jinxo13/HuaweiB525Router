@@ -6,7 +6,7 @@ import huawei_lte.xmlobjects as xmlobjects
 class Ethernet(unittest.TestCase):
     
     def test_router_features(self):
-        router = lte.B525Router('192.168.8.1')
+        router = lte.B525Router('192.168.9.1')
         router.login('admin', os.getenv('B525_PASSWORD'))
         try:
             print(router.features)

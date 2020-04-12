@@ -476,6 +476,12 @@ class StaticHostCollection(XmlObject):
             return None
 
 class StaticHost(XmlObject):
+    '''
+    Represents an static IP Address for a specific MAC address
+    '''
+    P_MAC_ADDRESS = 'macaddress'
+    P_IP_ADDRESS = 'ipaddress'
+
     def __init__(self, config):
         super(StaticHost, self).__init__()
         self.HostIndex = 0
@@ -485,8 +491,8 @@ class StaticHost(XmlObject):
         if isinstance(config, basestring):
             self.parseXML(config)
         else:
-            mac = self._get_param(config, 'macaddress')
-            ip = self._get_param(config, 'ipaddress')
+            mac = self._get_param(config, self.P_MAC_ADDRESS)
+            ip = self._get_param(config, self.P_IP_ADDRESS)
             if (not utils.isMacValid(mac)): raise ValueError("Invalid static host MAC address: %s" % mac)
             if (not utils.isIpValid(ip)): raise ValueError("Invalid static host IP Address: %s" % ip)
             self.HostHw = mac
@@ -522,17 +528,115 @@ class RouterControl(XmlObject):
     @classmethod
     def poweroff(cls): return RouterControl(cls.POWEROFF)
 
+class SipOptions(XmlObject):
+    P_CALL_WAITING = 'callwaiting'
+
+    def __init__(self, config):
+        super(SipOptions, self).__init__()
+        self.callwaitingenable = self._get_param(config, P_CALL_WAITING, 0)
+    
+    def enableCallWaiting(self):
+        self.callwaitingenable=1
+
+    def disableCallWaiting(self):
+        self.callwaitingenable=0
+
+class SipServer(XmlObject):
+    P_PROXY_ADDRESS = 'proxy_address'
+    P_PROXY_PORT = 'proxy_port'
+    P_REGISTER_ADDRESS = 'register_address'
+    P_REGISTER_PORT = 'register_port'
+    P_SIP_DOMAIN = 'sip_domain'
+    P_SECONDARY_SERVER = 'is_secondary'
+
+    def __init__(self, config):
+        super(SipServer, self).__init__()
+
+        #Primary
+        self.proxyserveraddress = self._get_param(config, self.P_PROXY_ADDRESS)
+        self.proxyserverport = self._get_param(config, self.P_PROXY_PORT)
+        self.registerserveraddress = self._get_param(config, self.P_REGISTER_ADDRESS)
+        self.registerserverport = self._get_param(config, self.P_REGISTER_PORT)
+        self.sipserverdomain = self._get_param(config, self.P_SIP_DOMAIN)
+
+        #Secondary
+        self.secondproxyserveraddress = ''
+        self.secondproxyserverport = ''
+        self.secondregisterserveraddress = ''
+        self.secondregisterserverport = ''
+        self.secondsipserverdomain = ''
+
+    def add_secondary(self, config):
+        self.secondproxyserveraddress = self._get_param(config, self.P_PROXY_ADDRESS)
+        self.secondproxyserverport = self._get_param(config, self.P_PROXY_PORT)
+        self.secondregisterserveraddress = self._get_param(config, self.P_REGISTER_ADDRESS)
+        self.secondregisterserverport = self._get_param(config, self.P_REGISTER_PORT)
+        self.secondsipserverdomain = self._get_param(config, self.P_SIP_DOMAIN)
+
+class SipAccount(XmlObject):
+    P_ACCOUNT = 'account'
+    P_USERNAME = 'username'
+    P_PASSWORD = 'password'
+    #registerstatus:registerStatus,
+    #index: editIndex
+
+    def __init__(self, config):
+        super(SipAccount, self).__init__()
+        self.username = self._get_param(config, self.P_USERNAME)
+        self.password = self._get_param(config, self.P_PASSWORD)
+        self.account = self._get_param(config, self.P_ACCOUNT)
+        self.registerstatus = ''
+        self.index = 0
+
+    def getElementName(self):
+        return 'account'
+
+class SipCollection(XmlObject):
+    '''
+    '''
+    def __init__(self):
+        super(SipCollection, self).__init__()
+        self.account = []
+
+    def addAccount(self, config):
+        rec = SipAccount(config)
+        rec.index = len(self.account)
+        self.account.append(rec)
+        return rec
+
+class VoiceSettings(XmlObject):
+    '''
+    {'cid_type': 'FSK|DTMF', 'dtmf_method': 'INBOUND|OUTBAND'}
+    '''
+    DTMF_INBAND = 0
+    DTMF_OUTBAND = 1
+    CID_FSK = 1
+    CID_DTMF = 2
+
+    P_CID_SEND_TYPE = 'cid_send_type'
+    P_CS_DTMF_METHOD = 'cs_dtmf_method'
+
+    def __init__(self, config):
+        super(VoiceSettings, self).__init__()
+        self.cid_send_type = self.CID_DTMF if self._get_param(config, self.P_CID_SEND_TYPE).upper() == 'DTMF' else self.CID_FSK
+        self.cs_dtmf_method = self.DTMF_OUTBAND if self._get_param(config, self.P_CS_DTMF_METHOD).upper() == 'OUTBAND' else self.DTMF_INBAND
+
 class Ddns(XmlObject):
+    P_USERNAME = 'username'
+    P_PASSWORD = 'password'
+    P_PROVIDER = 'provider'
+    P_DOMAIN = 'domain'
+
     PROVIDERS = ["DynDNS.org", "No-IP.com", "oray"]
     def __init__(self, config):
         super(Ddns, self).__init__()
-        provider = self._get_param(config, 'provider')
+        provider = self._get_param(config, self.P_PROVIDER)
         if (not provider in self.PROVIDERS):
             raise ValueError('Invalid DDNS service provided, it must be one of: [%s]' % ', '.join(self.PROVIDERS))
         self.provider = provider
-        self.username = self._get_param(config, 'username')
-        self.password = self._get_param(config, 'password')
-        self.domainname = self._get_param(config, 'domain')
+        self.username = self._get_param(config, self.P_USERNAME)
+        self.password = self._get_param(config, self.P_PASSWORD)
+        self.domainname = self._get_param(config, self.P_DOMAIN)
         self.status = 1
         self.index = 0
 
@@ -540,23 +644,28 @@ class Ddns(XmlObject):
         return self.__class__.__name__.lower()
 
 class DdnsCollection(XmlObject):
+    '''
+    Provides support for dynamic DNS providers: NoIp, DynDns, Oray
+    '''
     OPERATE_ADD = 1
     OPERATE_DELETE = 2
     OPERATE_EDIT = 3
+
     def __init__(self):
         super(DdnsCollection, self).__init__()
         self.ddnss = []
         self.operate = self.OPERATE_ADD
+    
     def addNoIpDdns(self, config):
-        config['provider'] = Ddns.PROVIDERS[1]
+        config[Ddns.P_PROVIDER] = Ddns.PROVIDERS[1]
         return self.addDdns(config)
 
     def addDynDnsDdns(self, config):
-        config['provider'] = Ddns.PROVIDERS[0]
+        config[Ddns.P_PROVIDER] = Ddns.PROVIDERS[0]
         return self.addDdns(config)
 
     def addOrayDdns(self, config):
-        config['provider'] = Ddns.PROVIDERS[2]
+        config[Ddns.P_PROVIDER] = Ddns.PROVIDERS[2]
         return self.addDdns(config)
 
     def addDdns(self, config):
@@ -575,6 +684,29 @@ class DdnsCollection(XmlObject):
         self.operate = self.OPERATE_EDIT
 
 class ConnectionMode(XmlObject):
+    '''
+    Represents an ethernet configuration
+    '''
+
+    P_PRIMARY_DNS = 'primarydns'
+    P_SECONDARY_DNS = 'secondarydns'
+    P_DNS_MANUAL = 'dnsmanual'
+    P_MTU = 'mtu'
+
+    P_PPOE_PASSWORD = 'password'
+    P_PPOE_USERNAME = 'username'
+    P_PPOE_AUTH = 'authmode'
+    
+    P_DIAL_MODE = 'dialmode'
+    P_MAX_IDLE = 'maxidletime'
+
+    P_STATIC_IP_ADDRESS = 'ipaddress'
+    P_STATIC_NETMASK = 'netmask'
+    P_STATIC_GATEWAY = 'gateway'
+    P_STATIC_PRIMARY_DNS = 'primarydns'
+    P_STATIC_SECONDARY_DNS = 'secondarydns'
+
+
     MODE_AUTO = 0
     MODE_PPPOE_DYNAMIC = 1
     MODE_PPPOE = 2
@@ -586,6 +718,10 @@ class ConnectionMode(XmlObject):
     AUTH_AUTO = 0
     AUTH_PAP = 1
     AUTH_CHAP = 2
+
+    #Dialup mode
+    DIAL_AUTO = 0
+    DIAL_ON_DEMAND = 1
 
     NO_DNS = '0.0.0.0'
 
@@ -616,8 +752,8 @@ class ConnectionMode(XmlObject):
         #Set values only if they exist in the supplied config
 
         if mode == self.MODE_DYNAMIC or mode == self.MODE_PPPOE_DYNAMIC or mode == self.MODE_AUTO:
-            if 'primarydns' in config:
-                dns = self._get_param(config, 'primarydns')
+            if self.P_PRIMARY_DNS in config:
+                dns = self._get_param(config, self.P_PRIMARY_DNS)
                 if dns == '': dns = self.NO_DNS
                 if (dns != self.NO_DNS):
                     if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Dynamic Primary DNS: %s" % dns)
@@ -627,82 +763,84 @@ class ConnectionMode(XmlObject):
                 else:
                     self.dynamicsetdnsmanual = 0
 
-            if 'secondarydns' in config:
-                dns = self._get_param(config, 'secondarydns')
+            if self.P_SECONDARY_DNS in config:
+                dns = self._get_param(config, self.P_SECONDARY_DNS)
                 if dns == '': dns = self.NO_DNS
                 if (dns != self.NO_DNS):
                     if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Dynamic Secondary DNS: %s" % dns)
                 self.dynamicsecondarydns = dns
                 if dns != self.NO_DNS: self.dynamicsetdnsmanual = 1
 
-            if 'dnsmanual' in config:
-                dns = self._get_param(config, 'dnsmanual')
-                if dns not in [0,1]: raise ValueError("dnsmanual must be 1 or 0: %s" % dns)
+            if self.P_DNS_MANUAL in config:
+                dns = self._get_param(config, self.P_DNS_MANUAL)
+                if dns not in [0,1]: raise ValueError("%s must be 1 or 0: %s" % (self.P_DNS_MANUAL, dns))
                 if self.dynamicprimarydns == self.NO_DNS: raise ValueError("Manual DNS specified, Primary DNS must be set")
                 self.dynamicsetdnsmanual = dns
 
-            if 'mtu' in config:
-                self.dynamicipmtu = self._get_param(config, 'mtu')
+            if self.P_MTU in config:
+                self.dynamicipmtu = self._get_param(config, self.P_MTU)
 
         if mode == self.MODE_PPPOE or mode == self.MODE_PPPOE_DYNAMIC or mode == self.MODE_AUTO:
-            if 'password' in config:
-                val = self._get_param(config, 'password')
+            if self.P_PPOE_PASSWORD in config:
+                val = self._get_param(config, self.P_PPOE_PASSWORD)
                 if len(val) > 63: raise ValueError('PPPOE password can contain a maximum of 63 characters, including letters, numbers, and symbols (ASCII characters 32-126).')
                 self.pppoepwd = val
             elif mode != self.MODE_AUTO and self.pppoepwd == '':
                 raise ValueError('PPOE password must be provided')
 
-            if 'username' in config:
-                val = self._get_param(config, 'username')
+            if self.P_PPOE_USERNAME in config:
+                val = self._get_param(config, self.P_PPOE_USERNAME)
                 if len(val) > 63: raise ValueError('PPPOE user can contain a maximum of 63 characters, including letters, numbers, and symbols (ASCII characters 32-126).')
                 self.pppoeuser = val
             elif mode != self.MODE_AUTO and self.username == '':
                 raise ValueError('PPOE username must be provided')
 
-            if 'authmode' in config:
-                mode = self._get_param(config, 'authmode')
+            if self.P_PPOE_AUTH in config:
+                mode = self._get_param(config, self.P_PPOE_AUTH)
                 if not mode in [self.AUTH_AUTO, self.AUTH_PAP, self.AUTH_CHAP]: raise ValueError('PPOE auth mode must be one of: 0 (AUTO), 1 (PAP), 2 (CHAP)')
-                self.pppoeauth = self._get_param(config, 'authmode')
+                self.pppoeauth = self._get_param(config, self.P_PPOE_AUTH)
 
-            if 'mtu' in config:
-                self.pppoemtu = self._get_param(config, 'mtu')
+            if self.P_MTU in config:
+                self.pppoemtu = self._get_param(config, self.P_MTU)
 
         if mode == self.MODE_STATIC:
 
-            if 'ipaddress' in config:
-                ip = self._get_param(config, 'ipaddress')
+            if self.P_STATIC_IP_ADDRESS in config:
+                ip = self._get_param(config, self.P_STATIC_IP_ADDRESS)
                 if (not utils.isIpValid(ip)): raise ValueError("Invalid IP Address: %s" % ip)
                 self.ipaddress = ip
                 self.netmask = '255.255.255.0'
             else:
-                raise ValueError('ipaddress must be provided')
+                raise ValueError('%s must be provided' % self.P_STATIC_IP_ADDRESS)
 
-            if 'netmask' in config:
-                self.netmask = self._get_param(config, 'netmask')
+            if self.P_STATIC_NETMASK in config:
+                self.netmask = self._get_param(config, self.P_STATIC_NETMASK)
 
-            if 'gateway' in config:
-                self.gateway = self._get_param(config, 'gateway')
+            if self.P_STATIC_GATEWAY in config:
+                self.gateway = self._get_param(config, self.P_STATIC_GATEWAY)
             else:
                 if self.gateway == '':
-                    raise ValueError('gateway must be provided')
+                    raise ValueError('%s must be provided' % self.P_STATIC_GATEWAY)
 
-            if 'mtu' in config:
-                self.staticipmtu = self._get_param(config, 'mtu')
+            if self.P_MTU in config:
+                self.staticipmtu = self._get_param(config, self.P_MTU)
 
-            if 'primarydns' in config:
-                dns = self._get_param(config, 'primarydns')
+            if self.P_STATIC_PRIMARY_DNS in config:
+                dns = self._get_param(config, self.P_STATIC_PRIMARY_DNS)
                 if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Primary DNS: %s" % dns)
                 self.primarydns = dns
 
-            if 'secondarydns' in config:
-                dns = self._get_param(config, 'secondarydns')
+            if self.P_STATIC_SECONDARY_DNS in config:
+                dns = self._get_param(config, self.P_STATIC_SECONDARY_DNS)
                 if (not utils.isIpValid(dns)): raise ValueError("Invalid IP Address for Secondary DNS: %s" % dns)
                 self.secondarydns = dns
 
-        if 'maxidletime' in config:
-            self.maxidletime = self._get_param(config, 'maxidletime')
+        if self.P_MAX_IDLE in config:
+            self.maxidletime = self._get_param(config, self.P_MAX_IDLE)
 
-        if 'dialmode' in config:
-            self.dialmode = self._get_param(config, 'dialmode')
+        if self.P_DIAL_MODE in config:
+            mode = self._get_param(config, self.P_DIAL_MODE)
+            if not mode in [self.DIAL_AUTO, self.DIAL_ON_DEMAND]: raise ValueError('PPOE dial up mode must be one of: 0 (AUTO), 1 (On Demand)')
+            self.dialmode = mode
 
         #PPPOE
