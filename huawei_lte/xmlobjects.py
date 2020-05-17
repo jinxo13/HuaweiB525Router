@@ -68,7 +68,7 @@ class XmlObject(object):
         return None
 
     def parseXML(self, xmlText):
-        xml = ET.fromstring(xmlText)
+        xml = ET.fromstring(xmlText.encode('utf-8'))
         for prop in self.getPropertyNames():
             value = self.getValue(prop)
             if isinstance(value, list):

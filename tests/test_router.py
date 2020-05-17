@@ -1,18 +1,28 @@
 import os
+from os.path import join, dirname
+import sys
 import unittest
 import huawei_lte.router as lte
 import huawei_lte.xmlobjects as xmlobjects
+import logging
+from dotenv import load_dotenv
 
 class Ethernet(unittest.TestCase):
     
+    def setUp(self):
+        logging.basicConfig(filename='test.log', level=logging.DEBUG)
+        dotenv_path = join(dirname(__file__), '.env')
+        # Load file from the path.
+        load_dotenv(dotenv_path)
+
     def test_router_features(self):
-        router = lte.B525Router('192.168.9.1')
+        router = lte.B525Router(os.getenv('B525_IP'))
         router.login('admin', os.getenv('B525_PASSWORD'))
         try:
             print(router.features)
             self.assertTrue(True)
-        except:
-            self.assertTrue(False)
+        except Exception, err:
+            self.assertTrue(False, err.message)
         finally:
             router.logout()
 
@@ -149,7 +159,7 @@ class Ethernet(unittest.TestCase):
             self.assertEqual(mode.pppoeauth, mode.AUTH_AUTO)
 
     def test_set_mode(self):
-        router = lte.B525Router('192.168.8.1')
+        router = lte.B525Router(os.getenv('B525_IP'))
         router.login('admin', os.getenv('B525_PASSWORD'))
         try:
             result = router.ethernet.set_auto({'primarydns': '8.8.8.8', 'secondarydns': '8.8.4.4'})
