@@ -1,4 +1,4 @@
-import xmlobjects as xmlobjects
+import huawei_lte.xmlobjects as xmlobjects
 
 class RouterError(Exception):
 

@@ -15,7 +15,7 @@ def get_client_proof(clientnonce, servernonce, password, salt, iterations):
     """ calculates server client proof (part of the SCRAM algorithm) """
     msg = "%s,%s,%s" % (clientnonce, servernonce, servernonce)
     salted_pass = hashlib.pbkdf2_hmac(
-        'sha256', password, bytearray.fromhex(salt), iterations)
+        'sha256', password.encode('utf_8'), bytearray.fromhex(salt), iterations)
     client_key = hmac.new(b'Client Key', msg=salted_pass,
                         digestmod=hashlib.sha256)
     stored_key = hashlib.sha256()
@@ -27,14 +27,14 @@ def get_client_proof(clientnonce, servernonce, password, salt, iterations):
     client_proof = bytearray()
     i = 0
     while i < client_key.digest_size:
-        client_proof.append(ord(client_key_digest[i]) ^ ord(signature_digest[i]))
+        client_proof.append(client_key_digest[i] ^ signature_digest[i])
         i = i + 1
     return hexlify(client_proof)
 
 def rsa_encrypt(rsae, rsan, data):
     if (data is None or data == ''): return ''
-    N = long(rsan,16)
-    E = long(rsae,16)
+    N = int(rsan,16)
+    E = int(rsae,16)
     b64data = base64.b64encode(data)
     pubkey = construct((N, E))
     cipher = PKCS1_v1_5.new(pubkey)

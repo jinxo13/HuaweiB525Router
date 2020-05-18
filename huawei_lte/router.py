@@ -31,7 +31,7 @@ def get_api(cls, api):
                     return inst.router.api(api)
                 return inst.api(api)
             except ValueError as err:
-                return xmlobjects.Error.xml_error(f.__name__, escape(err.message))
+                return xmlobjects.Error.xml_error(f.__name__, escape(str(err)))
             except:
                 logger.exception('message')
                 msg = 'Unexpected error: %s' % sys.exc_info()[0]
@@ -45,7 +45,7 @@ def post_api(f):
         try:
             return f(*args, **kwargs)
         except ValueError as err:
-            return xmlobjects.Error.xml_error(f.__name__, escape(err.message))
+            return xmlobjects.Error.xml_error(f.__name__, escape(str(err)))
         except:
             logger.exception('message')
             msg = 'Unexpected error: %s' % sys.exc_info()[0]
@@ -306,10 +306,10 @@ class Ethernet(RouterObject):
         state = xmlobjects.CustomXml({'connectionmode': 0, 'connectstatus': 0})
         state.parseXML(self.status)
 
-        connection_mode = self.CONNECTION_MODE[int(state.connectionmode)]
+        connection_mode = self.CONNECTION_MODE[int(state.getValue('connectionmode'))]
         connection_status = 'Unknown'
-        if int(state.connectstatus) in self.CONNECTION_STATUS.keys():
-            connection_status = self.CONNECTION_STATUS[int(state.connectstatus)]
+        if int(state.getValue('connectstatus')) in self.CONNECTION_STATUS.keys():
+            connection_status = self.CONNECTION_STATUS[int(state.getValue('connectstatus'))]
         xml = xmlobjects.CustomXml({
             'ConnectionStatus': connection_status,
             'ConnectionMode': connection_mode

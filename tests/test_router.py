@@ -1,6 +1,5 @@
 import os
 from os.path import join, dirname
-import sys
 import unittest
 import huawei_lte.router as lte
 import huawei_lte.xmlobjects as xmlobjects
@@ -10,7 +9,7 @@ from dotenv import load_dotenv
 class Ethernet(unittest.TestCase):
     
     def setUp(self):
-        logging.basicConfig(filename='test.log', level=logging.DEBUG)
+        logging.basicConfig(filename='test.log', filemode='w', level=logging.DEBUG)
         dotenv_path = join(dirname(__file__), '.env')
         # Load file from the path.
         load_dotenv(dotenv_path)
@@ -21,8 +20,8 @@ class Ethernet(unittest.TestCase):
         try:
             print(router.features)
             self.assertTrue(True)
-        except Exception, err:
-            self.assertTrue(False, err.message)
+        except Exception as err:
+            self.assertTrue(False, err)
         finally:
             router.logout()
 
@@ -40,15 +39,15 @@ class Ethernet(unittest.TestCase):
             self.assertEqual(mode.netmask, '255.255.255.0')
             self.assertEqual(mode.ipaddress, '192.168.1.3')
             self.assertEqual(mode.gateway, '192.168.1.1')
-        except Exception, err:
-            self.assertTrue(False, err.message)
+        except Exception as err:
+            self.assertTrue(False, err)
 
         #Required parameters
         try:
             mode.set(mode.MODE_STATIC, {''})
             self.assertTrue(False, 'Missing required params')
-        except ValueError, err:
-            self.assertTrue('ipaddress must be provided' in err.message)
+        except ValueError as err:
+            self.assertTrue('ipaddress must be provided' in str(err))
             self.assertEqual(mode.netmask, '255.255.255.0')
             self.assertEqual(mode.ipaddress, '192.168.1.3')
             self.assertEqual(mode.gateway, '192.168.1.1')
@@ -63,8 +62,8 @@ class Ethernet(unittest.TestCase):
             mode.gateway = ''
             mode.set(mode.MODE_STATIC, {'ipaddress': '192.168.1.3'})
             self.assertTrue(False, 'Missing gateway')
-        except ValueError, err:
-            self.assertTrue('gateway must be provided' in err.message.lower())
+        except ValueError as err:
+            self.assertTrue('gateway must be provided' in str(err).lower())
             self.assertEqual(mode.netmask, '255.255.255.0')
             self.assertEqual(mode.ipaddress, '192.168.1.3')
             self.assertEqual(mode.gateway, '')
@@ -73,8 +72,8 @@ class Ethernet(unittest.TestCase):
         try:
             mode.set(mode.MODE_STATIC, {'ipaddress': 'fred', 'gateway': '192.168.1.1'})
             self.assertTrue(False, 'Invalid IP Address')
-        except ValueError, err:
-            self.assertTrue('invalid ip address' in err.message.lower())
+        except ValueError as err:
+            self.assertTrue('invalid ip address' in str(err).lower())
 
     def test_set_dynamic(self):
         mode = xmlobjects.ConnectionMode()
@@ -88,8 +87,8 @@ class Ethernet(unittest.TestCase):
             self.assertEqual(mode.dynamicprimarydns, '8.8.8.8')
             self.assertEqual(mode.dynamicsecondarydns, '8.8.4.4')
             self.assertEqual(mode.dynamicipmtu, 1480)
-        except Exception, err:
-            self.assertTrue(False, err.message)
+        except Exception as err:
+            self.assertTrue(False, err)
 
         try:
             mode.set(mode.MODE_AUTO, {'dnsmanual': 0})
@@ -97,8 +96,8 @@ class Ethernet(unittest.TestCase):
             self.assertEqual(mode.dynamicprimarydns, '8.8.8.8')
             self.assertEqual(mode.dynamicsecondarydns, '8.8.4.4')
             self.assertEqual(mode.dynamicipmtu, 1480)
-        except Exception, err:
-            self.assertTrue(False, err.message)
+        except Exception as err:
+            self.assertTrue(False, err)
 
         try:
             mode.set(mode.MODE_AUTO, {'mtu': 1500})
@@ -106,16 +105,16 @@ class Ethernet(unittest.TestCase):
             self.assertEqual(mode.dynamicprimarydns, '8.8.8.8')
             self.assertEqual(mode.dynamicsecondarydns, '8.8.4.4')
             self.assertEqual(mode.dynamicipmtu, 1500)
-        except Exception, err:
-            self.assertTrue(False, err.message)
+        except Exception as err:
+            self.assertTrue(False, err)
 
 
         #Bad IP Address
         try:
             mode.set(mode.MODE_AUTO, {'primarydns': 'fred'})
             self.assertTrue(False, 'Invalid IP Address')
-        except ValueError, err:
-            self.assertTrue('invalid ip address' in err.message.lower())
+        except ValueError as err:
+            self.assertTrue('invalid ip address' in str(err).lower())
             self.assertEqual(mode.dynamicsetdnsmanual, 0)
             self.assertEqual(mode.dynamicprimarydns, '8.8.8.8')
             self.assertEqual(mode.dynamicsecondarydns, '8.8.4.4')
@@ -125,8 +124,8 @@ class Ethernet(unittest.TestCase):
         try:
             mode.set(mode.MODE_AUTO, {'secondarydns': 'fred'})
             self.assertTrue(False, 'Invalid IP Address')
-        except ValueError, err:
-            self.assertTrue('invalid ip address' in err.message.lower())
+        except ValueError as err:
+            self.assertTrue('invalid ip address' in str(err).lower())
             self.assertEqual(mode.dynamicsetdnsmanual, 0)
             self.assertEqual(mode.dynamicprimarydns, '8.8.8.8')
             self.assertEqual(mode.dynamicsecondarydns, '8.8.4.4')
@@ -143,8 +142,8 @@ class Ethernet(unittest.TestCase):
             self.assertEqual(mode.pppoepwd, 'secret')
             self.assertEqual(mode.pppoeauth, mode.AUTH_CHAP)
             self.assertNotEqual(mode.pppoeauth, 0)
-        except Exception, err:
-            self.assertTrue(False, err.message)
+        except Exception as err:
+            self.assertTrue(False, err)
         
         try:
             mode.pppoepwd = ''
@@ -152,8 +151,8 @@ class Ethernet(unittest.TestCase):
             mode.pppoeauth = mode.AUTH_AUTO
             mode.set(mode.MODE_PPPOE, {'username': 'fred'})
             self.assertTrue(False, 'Missing password')
-        except Exception, err:
-            self.assertTrue('password must be provided' in err.message.lower())
+        except Exception as err:
+            self.assertTrue('password must be provided' in str(err).lower())
             self.assertEqual(mode.pppoeuser, '')
             self.assertEqual(mode.pppoepwd, '')
             self.assertEqual(mode.pppoeauth, mode.AUTH_AUTO)
