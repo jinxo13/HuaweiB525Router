@@ -67,15 +67,15 @@ class RouterObject(object):
 class Dataswitch(RouterObject):
     @post_api
     def set_dataswitch_on(self):
-        net = xmlobjects.DataswitchMode()
-        net.set_dataswitch_on()
-        return self.api('dialup/mobile-dataswitch', net)
+        dataswitch = xmlobjects.DataswitchMode()
+        dataswitch.set_dataswitch_on()
+        return self.api('dialup/mobile-dataswitch', dataswitch)
     
     @post_api
     def set_dataswitch_off(self):
-        net = xmlobjects.DataswitchMode()
-        net.set_dataswitch_off()
-        return self.api('dialup/mobile-dataswitch', net)
+        dataswitch = xmlobjects.DataswitchMode()
+        dataswitch.set_dataswitch_off()
+        return self.api('dialup/mobile-dataswitch', dataswitch)
 
 class Lan(RouterObject):
     '''LAN module'''
@@ -675,6 +675,7 @@ class B525Router(object):
         self.monitoring = Monitoring(self)
         self.wan = Wan(self)
         self.security = Security(self)
+        self.dataswitch = Dataswitch(self)
         self.net = Network(self)
         self.ethernet = Ethernet(self)
         self.voip = Voip(self)
