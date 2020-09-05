@@ -64,6 +64,19 @@ class RouterObject(object):
     def _get_param(cls, vals, key, default=None):
         return utils.get_param(vals, key, default)
 
+class Dataswitch(RouterObject):
+    @post_api
+    def set_dataswitch_on(self):
+        net = xmlobjects.DataswitchMode()
+        net.set_dataswitch_on()
+        return self.api('dialup/mobile-dataswitch', net)
+    
+    @post_api
+    def set_dataswitch_off(self):
+        net = xmlobjects.DataswitchMode()
+        net.set_dataswitch_off()
+        return self.api('dialup/mobile-dataswitch', net)
+
 class Lan(RouterObject):
     '''LAN module'''
 
