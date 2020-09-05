@@ -235,13 +235,13 @@ class DataswitchMode(XmlObject):
         <dataswitch>1</dataswitch>      
         '''
         super(DataswitchMode, self).__init__()
-        self.Dataswitch = '1' #ON
+        self.dataswitch = 1 #ON
 
     def set_dataswitch_on(self):
-        self.Dataswitch = '1'
+        self.dataswitch = 1
 
     def set_dataswitch_off(self):
-        self.Dataswitch = '0'    
+        self.dataswitch = 0 
 
 class NetworkMode(XmlObject):
     NET_MODES = {

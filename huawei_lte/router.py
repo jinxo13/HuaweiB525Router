@@ -821,12 +821,17 @@ class B525Router(object):
             headers['Content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8;enc'
         else:
             headers['Content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
+
+        #print(data)
+
         if data is None or data == '':
             response = self.__get(url, headers).text
         else:
             if encrypted:
                 data = crypto.rsa_encrypt(self.__rsae, self.__rsan, data)
             response = self.__post(url, data, headers).text    
+
+        #print(response)
 
         #Add error message if known and missing
         if RouterError.hasError(response):
