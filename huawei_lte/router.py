@@ -64,6 +64,19 @@ class RouterObject(object):
     def _get_param(cls, vals, key, default=None):
         return utils.get_param(vals, key, default)
 
+class Dataswitch(RouterObject):
+    @post_api
+    def set_dataswitch_on(self):
+        dataswitch = xmlobjects.DataswitchMode()
+        dataswitch.set_dataswitch_on()
+        return self.api('dialup/mobile-dataswitch', dataswitch)
+    
+    @post_api
+    def set_dataswitch_off(self):
+        dataswitch = xmlobjects.DataswitchMode()
+        dataswitch.set_dataswitch_off()
+        return self.api('dialup/mobile-dataswitch', dataswitch)
+
 class Lan(RouterObject):
     '''LAN module'''
 
@@ -662,6 +675,7 @@ class B525Router(object):
         self.monitoring = Monitoring(self)
         self.wan = Wan(self)
         self.security = Security(self)
+        self.dataswitch = Dataswitch(self)
         self.net = Network(self)
         self.ethernet = Ethernet(self)
         self.voip = Voip(self)
@@ -807,12 +821,17 @@ class B525Router(object):
             headers['Content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8;enc'
         else:
             headers['Content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
+
+        #print(data)
+
         if data is None or data == '':
             response = self.__get(url, headers).text
         else:
             if encrypted:
                 data = crypto.rsa_encrypt(self.__rsae, self.__rsan, data)
             response = self.__post(url, data, headers).text    
+
+        #print(response)
 
         #Add error message if known and missing
         if RouterError.hasError(response):

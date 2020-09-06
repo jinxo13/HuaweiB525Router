@@ -228,6 +228,21 @@ class VirtualServer(XmlObject):
     def getElementName(self):
         return 'Server'
 
+class DataswitchMode(XmlObject):
+
+    def __init__(self):
+        '''
+        <dataswitch>1</dataswitch>      
+        '''
+        super(DataswitchMode, self).__init__()
+        self.dataswitch = 1 #ON
+
+    def set_dataswitch_on(self):
+        self.dataswitch = 1
+
+    def set_dataswitch_off(self):
+        self.dataswitch = 0 
+
 class NetworkMode(XmlObject):
     NET_MODES = {
         'AUTO': '00',
