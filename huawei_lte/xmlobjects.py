@@ -406,7 +406,7 @@ class LanSettings(XmlObject):
         url = self._get_param(config, 'url', 'homerouter.cpe')
         if (not utils.isIpValid(ipaddress)): raise ValueError("Invalid LAN IP Address: %s" % ipaddress)
         if (not utils.isIpValid(netmask)): raise ValueError("Invalid LAN Netmask: %s" % netmask)
-        self.DhcpIPAddress = ipaddres
+        self.DhcpIPAddress = ipaddress
         self.DhcpLanNetmask = netmask
         self.homeurl = url
 
